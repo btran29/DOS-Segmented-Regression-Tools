@@ -2,9 +2,9 @@
 #
 # This script takes all csv files in the working directory, runs
 # the segmented package (with experimental threshold-guessing)
-# on the HbR data, then generates a figure in the working 
+# on the HbR data, then generates a figure in the working
 # directory.
-# 
+#
 # Can be run on binned/unbinned data!
 #
 # Required packages: segmented
@@ -12,6 +12,11 @@
 
 # Get working directory for output
 workingDir <- getwd()
+
+# Create subdirectory for output
+# subdir <- paste(workingDir,'/R Threshold Output',sep = "")
+# subDir <- 'R Threshold Output'
+# ifelse(!dir.exists(file.path(workingDir, subDir)), dir.create(file.path(workingDir, subDir)), FALSE)
 
 # Locate files of interest
 csv <- dir(pattern="*.csv")
@@ -33,7 +38,6 @@ DOSI.segmented <- function(var,twopoints=TRUE,arg2,arg3){
   return(varOut)
 }
 
-
 # Function to generate figures
 bpFigures <- function(variable,xAxisLabel,yAxisLabel,title){
   # Variable data over a 12 minute time axis
@@ -51,23 +55,85 @@ bpFigures <- function(variable,xAxisLabel,yAxisLabel,title){
   }
 }
 
+# Function to collect individual breakpoint data
+collectBPdata <- function(arg1){
+  # Pre-allocate temporary vectors
+  # Segmented variables of interest
+  bpEstX      <- vector()
+  bpEstY      <- vector()
+  bpRelTime   <- vector()
+  lConf       <- vector()
+  uConf       <- vector()
+  confDiff    <- vector()
 
-# Batch loop
+  if(length(arg1$psi[,2])>=1){
+    for (iConfint in 1:length(arg1$psi[,2])){
+      # Collect confint data
+      bpEstX[iConfint]   <- confint(arg1)[[1]][[iConfint]]
+      bpEstY[iConfint]   <- arg1$fitted.values[which(abs(arg1$psi[iConfint,2]-arg1$model$x)==
+                                                       min(abs(arg1$psi[iConfint,2]-arg1$model$x)))]
+      lConf[iConfint]    <- confint(arg1)[[1]][length(arg1$psi[,2])*1+iConfint]
+      uConf[iConfint]    <- confint(arg1)[[1]][length(arg1$psi[,2])*2+iConfint]
+      confDiff[iConfint] <- abs(lConf[iConfint]-bpEstX[iConfint])
+
+      # Find breakpoint time/total ramp time
+      bpRelTime[iConfint] <- bpEstX[iConfint]/max(normTime)
+    }
+  }
+
+  confintData <- data.frame(
+    # Segmented variables of interest
+    bpEstX,
+    bpEstY,
+    lConf,
+    uConf,
+    confDiff,
+    bpRelTime)
+  return(confintData)
+}
+
+
+# Batch loop with main method
 for(i in 1:length(csv))
 {
   # Obtain data from current file
   csvData <- read.csv(csv[i], header = TRUE)
+
+  # Normalize time data
   Time    <- csvData[[1]]
-  L.HbR   <- data.frame(x=Time, y=csvData[[3]])
+  normTime <- Time-min(Time)
+
+  # Variables used
+  L.HbR   <- data.frame(x=normTime, y=csvData[[3]])
+  R.HbR   <- data.frame(x=normTime, y=csvData[[6]])
 
   # Convert data to linear model for segmented
-  L.HbR.lm <- lm(y~x,data=L.HbR)
+  out <-list(
+    "L.HbR.lm"  = L.HbR.lm <- lm(y~x,data=L.HbR),
+    "R.HbR.lm"  = R.HbR.lm <- lm(y~x,data=R.HbR)
+  )
 
   # Run segmented as output
-  out.L.HbR <- DOSI.segmented(L.HbR.lm,twopoints=FALSE)
+  if (exists("bpOutput")==FALSE){
+    bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+    }
 
   # Get base file name for outputs
   outputFileName <- paste(workingDir,"/",paste(substr(csv[i],1,13)),"_", sep="")
+
+
+  # Collect individual breakpoint data over all variables
+  bpOutput2<-sapply(bpOutput,collectBPdata,simplify=FALSE,USE.NAMES=TRUE)
+
+  # Write segmented data into a text file
+  for(ibpOutput in 1:length(bpOutput2)){
+    write.table(paste(names(bpOutput)[ibpOutput],csv[i]),
+                paste(outputFileName,"Data.csv",sep=""), sep=",",
+                append=TRUE,row.names=FALSE)
+    write.table(bpOutput2[ibpOutput],
+                paste(outputFileName,"Data.csv",sep=""), sep=",",
+                append=TRUE, row.names=FALSE)
+  }
 
   # Generate figures
   cat(paste("BRBS","\n"))
@@ -75,7 +141,8 @@ for(i in 1:length(csv))
   png(filename = paste(outputFileName,"LHbR.png",sep="."),
       width = 1024, height = 1024, units = "px", pointsize = 16)
 
-  try({bpFigures(out.L.HbR,"Time (sec)","[HbR] (uM)","PFC HbR")})
+  bpFigures(bpOutput$L.HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
+
   dev.off()
 
 }
