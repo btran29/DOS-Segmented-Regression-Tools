@@ -8,7 +8,7 @@
 # Can be run on binned/unbinned data!
 #
 # Required packages: segmented
-# Updated 8/21/15 Brian
+# Updated 10/27/15 Brian
 
 # Get working directory for output
 workingDir <- getwd()
