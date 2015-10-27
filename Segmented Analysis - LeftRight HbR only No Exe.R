@@ -10,6 +10,8 @@
 # Required packages: segmented
 # Updated 10/27/15 Brian
 
+useTwoPointsMethod <- TRUE
+
 # Get working directory for output
 workingDir <- getwd()
 
@@ -93,7 +95,7 @@ collectBPdata <- function(arg1){
 }
 
 # Batch loop with main method
-print("Starting analysis (progress shown with Subject ID)")
+message("Starting analysis (progress shown with Subject ID) \n")
 
 for(i in 1:length(csv)){
 
@@ -118,7 +120,31 @@ for(i in 1:length(csv)){
   )
 
   # Run segmented as output
-  bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+
+  # Auto-find points method
+  if(!useTwoPointsMethod){
+    bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+  }
+
+  # Two-points method, reverting to auto-find if boundary error occurs
+  if(useTwoPointsMethod){
+    # Find time indicies corresponding to 1/3 and 2/3 of the total time
+    firstPoint  <- abs(normTime-(2/5)*(max(normTime)))
+    secondPoint <- abs(normTime-(3/5)*(max(normTime)))
+
+    ind.firstPoint  <- which(firstPoint  == min(firstPoint))
+    ind.secondPoint <- which(secondPoint == min(secondPoint))
+
+
+    bpOutput <- tryCatch({
+      sapply(out,DOSI.segmented,twopoints=TRUE,normTime[ind.firstPoint],normTime[ind.secondPoint],simplify=FALSE,USE.NAMES=TRUE)
+    },error = function(e) e)
+
+    if(!inherits(bpOutput, "error")){
+      bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+    }
+
+  } # end two-points conditional
 
   # Get base file name for outputs
   outputFileName <- paste(workingDir,"/",paste(substr(csv[i],1,13)),"_", sep="")
@@ -135,16 +161,23 @@ for(i in 1:length(csv)){
     write.table(bpOutput2[ibpOutput],
                 paste(outputFileName,"Data.csv",sep=""), sep=",",
                 append=TRUE, row.names=FALSE)
-  }
+  } # end csv output loop
 
   # Generate figures
 
-  # Plot only if data is present
+  # Plot only if data for particular variable is present
   if(length(bpOutput$L.HbR.lm$psi[,2])>=1){
     png(filename = paste(outputFileName,"LHbR.png",sep="."),
         width = 1024, height = 1024, units = "px", pointsize = 16)
     bpFigures(bpOutput$L.HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
     dev.off()
   } # end conditional for L.HbR figure
+
+  if(length(bpOutput$R.HbR.lm$psi[,2])>=1){
+    png(filename = paste(outputFileName,"RHbR.png",sep="."),
+        width = 1024, height = 1024, units = "px", pointsize = 16)
+    bpFigures(bpOutput$R.HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
+    dev.off()
+  } # end conditional for R.HbR figure
 
 } # end .csv file loop
