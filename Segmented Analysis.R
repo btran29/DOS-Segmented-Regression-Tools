@@ -526,15 +526,15 @@ for(i in 1:length(csv))
         var2lab <- "Post Training" #substr(csv[indPostTraining],6,7)
 
         # Plot overlay figure
-        p1 <- ggOverlayPlot(Figure.csvData.PRE$oBR,var1lab,Figure.csvData.POST$oBR,var2lab,"[HBR] (然)","PFC HbR")
-        p2 <- ggOverlayPlot(Figure.csvData.PRE$oBS,var1lab,Figure.csvData.POST$oBS,var2lab,"stO2 (然)","PFC stO2")
+        p1 <- ggOverlayPlot(Figure.csvData.PRE$oBR,var1lab,Figure.csvData.POST$oBR,var2lab,"[HBR] (繕M)","PFC HbR")
+        p2 <- ggOverlayPlot(Figure.csvData.PRE$oBS,var1lab,Figure.csvData.POST$oBS,var2lab,"stO2 (繕M)","PFC stO2")
 
         pdf(file = paste(outputFileName,"BRBS.pdf",sep=""))
         multiplot(p1,p2,cols=1)
         dev.off()
 
-        p3 <- ggOverlayPlot(Figure.csvData.PRE$oBO,var1lab,Figure.csvData.POST$oBO,var2lab,"HbO2 (然)","PFC HbO2")
-        try({p4 <- ggOverlayPlot(Figure.csvData.PRE$oBT,var1lab,Figure.csvData.POST$oBT,var2lab,"THb (然)","PFC THb")})
+        p3 <- ggOverlayPlot(Figure.csvData.PRE$oBO,var1lab,Figure.csvData.POST$oBO,var2lab,"HbO2 (繕M)","PFC HbO2")
+        try({p4 <- ggOverlayPlot(Figure.csvData.PRE$oBT,var1lab,Figure.csvData.POST$oBT,var2lab,"THb (繕M)","PFC THb")})
 
         pdf(file = paste(outputFileName,"BOBT.pdf",sep=""))
         multiplot(p3,p4,cols=1)
@@ -548,7 +548,7 @@ for(i in 1:length(csv))
         dev.off()
 
         p7 <- ggOverlayPlot(Figure.csvData.PRE$oHR,var1lab,Figure.csvData.POST$oHR,var2lab,"Heart Rate (beats/min)","Heart Rate")
-        p8 <- ggOverlayPlot(Figure.csvData.PRE$oBOf,var1lab,Figure.csvData.POST$oBOf,var2lab,"HbO2 FAC (然)","PFC HbO2 FAC")
+        p8 <- ggOverlayPlot(Figure.csvData.PRE$oBOf,var1lab,Figure.csvData.POST$oBOf,var2lab,"HbO2 FAC (繕M)","PFC HbO2 FAC")
 
         pdf(file = paste(outputFileName,"HRBOf.pdf",sep=""))
         multiplot(p7,p8,cols=1)
