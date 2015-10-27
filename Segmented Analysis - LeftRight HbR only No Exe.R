@@ -92,10 +92,14 @@ collectBPdata <- function(arg1){
   return(confintData)
 }
 
-
 # Batch loop with main method
-for(i in 1:length(csv))
-{
+print("Starting analysis (progress shown with Subject ID)")
+
+for(i in 1:length(csv)){
+
+  # Show current study in console
+  cat(paste(" ",substr(csv[i],1,4),"\n"))
+
   # Obtain data from current file
   csvData <- read.csv(csv[i], header = TRUE)
 
@@ -114,9 +118,7 @@ for(i in 1:length(csv))
   )
 
   # Run segmented as output
-  if (exists("bpOutput")==FALSE){
-    bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
-    }
+  bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
 
   # Get base file name for outputs
   outputFileName <- paste(workingDir,"/",paste(substr(csv[i],1,13)),"_", sep="")
@@ -136,13 +138,13 @@ for(i in 1:length(csv))
   }
 
   # Generate figures
-  cat(paste("BRBS","\n"))
-  #pdf(paste(outputFileName,"LHbR.pdf",sep="."))
-  png(filename = paste(outputFileName,"LHbR.png",sep="."),
-      width = 1024, height = 1024, units = "px", pointsize = 16)
 
-  bpFigures(bpOutput$L.HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
+  # Plot only if data is present
+  if(length(bpOutput$L.HbR.lm$psi[,2])>=1){
+    png(filename = paste(outputFileName,"LHbR.png",sep="."),
+        width = 1024, height = 1024, units = "px", pointsize = 16)
+    bpFigures(bpOutput$L.HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
+    dev.off()
+  } # end conditional for L.HbR figure
 
-  dev.off()
-
-}
+} # end .csv file loop
