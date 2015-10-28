@@ -27,10 +27,10 @@ csv <- dir(pattern="*.csv")
 seg.it <- 100
 
 # Function to run segmented over data
-DOSI.segmented <- function(var,twopoints=TRUE,arg2,arg3){
+DOSI.segmented <- function(var,onepoint=TRUE,arg2){
   try({
-    if(!twopoints){varOut <- segmented(var,seg.Z=~x,psi=list(x=NA),control=seg.control(stop.if.error=FALSE,n.boot=0, it.max=seg.it))
-    } else{varOut <- segmented(var,seg.Z=~x,psi=list(x=c(arg2,arg3)),control=seg.control(display=FALSE,n.boot=50, it.max=seg.it))}
+    if(!onepoint){varOut <- segmented(var,seg.Z=~x,psi=list(x=NA),control=seg.control(stop.if.error=FALSE,n.boot=0, it.max=seg.it))
+    } else{varOut <- segmented(var,seg.Z=~x,psi=list(x=arg2),control=seg.control(display=FALSE,n.boot=50, it.max=seg.it))}
   })
   # If the method fails, fill breakpoint data with a dummy value
   if(exists("varOut")==FALSE){
@@ -114,32 +114,29 @@ for(i in 1:length(csv)){
 
   # Convert data to linear model for segmented
   out <-list(
-    "HbR.lm"  = HbR.lm <- lm(y~x,data=L.HbR)
+    "HbR.lm"  = HbR.lm <- lm(y~x,data=HbR)
   )
 
   # Run segmented as output
 
   # Auto-find points method
   if(!useOnePointMethod){
-    bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+    bpOutput <- sapply(out,DOSI.segmented,onepoint=FALSE,simplify=FALSE,USE.NAMES=TRUE)
   }
 
   # Two-points method, reverting to auto-find if boundary error occurs
   if(useOnePointMethod){
-    # Find time indicies corresponding to 1/3 and 2/3 of the total time
+    # Find time indicies corresponding to 2/3 of the total time
     firstPoint  <- abs(normTime-(2/3)*(max(normTime)))
-    secondPoint <- abs(normTime-(2/3)*(max(normTime)))
-
     ind.firstPoint  <- which(firstPoint  == min(firstPoint))
-    ind.secondPoint <- which(secondPoint == min(secondPoint))
 
 
     bpOutput <- tryCatch({
-      sapply(out,DOSI.segmented,twopoints=TRUE,normTime[ind.firstPoint],normTime[ind.secondPoint],simplify=FALSE,USE.NAMES=TRUE)
+      sapply(out,DOSI.segmented,onepoint=TRUE,normTime[ind.firstPoint],simplify=FALSE,USE.NAMES=TRUE)
     },error = function(e) e)
 
     if(!inherits(bpOutput, "error")){
-      bpOutput <- sapply(out,DOSI.segmented,twopoints=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+      bpOutput <- sapply(out,DOSI.segmented,onepoint=FALSE,simplify=FALSE,USE.NAMES=TRUE)
     }
 
   } # end two-points conditional
@@ -167,8 +164,8 @@ for(i in 1:length(csv)){
   if(length(bpOutput$HbR.lm$psi[,2])>=1){
     png(filename = paste(outputFileName,"HbR.png",sep="."),
         width = 1024, height = 1024, units = "px", pointsize = 16)
-    bpFigures(bpOutput$L.HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
+    bpFigures(bpOutput$HbR.lm,"Time (sec)","[HbR] (uM)","PFC HbR")
     dev.off()
-  } # end conditional for L.HbR figure
+  } # end conditional for HbR figure
 
 } # end .csv file loop
