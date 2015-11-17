@@ -388,11 +388,16 @@ for iM = 1:numel(matfiles)
                 
             % Define binning parameters based on study phase time axis data
             timeAxis = ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase).time;
-            topEdge = max(timeAxis); 
-            botEdge = min(timeAxis);
-            numBins = ceil(max(timeAxis)*(3)); % 20 sec bins, given axis (min)
-            binEdges = linspace(botEdge, topEdge, numBins+1);
-            [h,whichBin] = histc(timeAxis, binEdges);
+            
+            [~, indTime] = sort(timeAxis);
+            numVals = length(timeAxis); 
+            numBins = numVals/2;  % factor by which to divide data by,
+                                    % assuming data is in minutes, into
+                                    % 10 second bins. confirm via(A2-A1)*60
+
+            % Linear split of time axis for non-uniform bins
+            step = (1:numVals/numBins:numVals);
+            if step(end)~=numVals, step = [step numVals+1]; end %#ok<AGROW>
             
             % Bin available variables in study phase
             indBinningVars = fieldnames(ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase));
@@ -403,13 +408,12 @@ for iM = 1:numel(matfiles)
                 currVarToBinData = ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase).(indBinningVars{iRawData});
 
                 % Populate new time axis with corresponding response variable data
-                binMean = zeros(numBins,1);
-                for iBins = 1:numBins
-                    flagBinMembers = (whichBin == iBins);
-                    binMembers     = currVarToBinData(flagBinMembers);
-                    binMean(iBins) = mean(binMembers);
+                binMean = zeros(length(step)-1,1);
+                for i = 1 : length(step)-1    
+                    bin = indTime(step(i):step(i+1)-1);
+                    binMean(i,1) = mean(currVarToBinData(bin));
                 end
-
+                
                 % Assign binned data
                  ExeDOSI.(initial).(visit).(date).(pfcORvl).Binned.(fadORfac).StudyPhases.(currPhase).(currVarToBin) = ...
                      binMean;
