@@ -1,3 +1,4 @@
+# Ver 11-22-15 Brian
 ## DOSI threshold analysis script
 # Runs segmented on all CSV studies ending in "Brain_MAT.csv" and "Exe_MAT.csv",
 # then outputs the data in a corresponding rawOutput csv file, as well as saves
@@ -271,7 +272,46 @@ for(i in 1:length(csv))
     write.table(bpOutput2[ibpOutput],
                 paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE, row.names=FALSE)
   }
-
+  
+  # Function to collect data at maximum work-rate
+  collectMaxData <- function(){
+    # Initialize vectors
+    maxWR <- max(WR)
+    
+    # Find equivalent exercise indicies
+    indLequivExeTime   <- which(abs((equivExeTime-(10/60))-exeTime)==min(abs((equivExeTime-(10/60))-exeTime)))
+    indUequivExeTime   <- which(abs((equivExeTime-exeTime)==min(abs((equivExeTime-exeTime)))))
+    
+    # Average data over final 10s of exercise
+    AvgVOK      <- mean(VOK$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgVOKstDev <- sd(VOK$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    
+    AvgHR       <- mean(HR$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgHRstDev  <- sd(HR$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    
+    AvgVE       <- mean(VE$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgVEstDev  <- sd(VE$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    
+    # Collect all exercise averaged data into a data frame
+    maxWRData <- data.frame(AvgVOK,AvgVOKstDev,
+                            AvgHR,AvgHRstDev,
+                            AvgVE,AvgVEstDev)
+    return(maxWRData)
+    
+  }
+  
+  # Collect exercise variables at maximum work-rate
+  maxWROutput <- collectMaxData
+  
+  # Write maximum work-rate data into table
+  write.table(paste(substr(csv[i],1,4),"Maximum work-rate data",sep=" "),
+              paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE,row.names=FALSE)
+  
+  for(imaxWROutput in 1:length(maxWROutput)){
+    write.table(maxWROutput[imaxWROutput],
+                paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE, row.names=FALSE)
+  }
+  
   # Collect study data in global environment
   studyData  <- list(bpOutput,bpOutput2)
   if(exists("ExeDOSI")==FALSE){
@@ -441,7 +481,6 @@ ggOverlayPlot <- function(variable,var1lab,variable2,var2lab,gYlab,gTitle){
 } # End of ggplot function
 
 ## Plot tiling function
-# Multiplot function for ggplot2 by Winston Chang (http://www.cookbook-r.com/)
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
   # Make a list from the ... arguments and plotlist
