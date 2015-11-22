@@ -441,6 +441,7 @@ ggOverlayPlot <- function(variable,var1lab,variable2,var2lab,gYlab,gTitle){
 } # End of ggplot function
 
 ## Plot tiling function
+# Multiplot function for ggplot2 by Winston Chang (http://www.cookbook-r.com/)
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
   # Make a list from the ... arguments and plotlist
