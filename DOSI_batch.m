@@ -1,3 +1,4 @@
+% Ver 11-22-15 Brian
 %% Data collection scripts for DOSI and metabolic cart data
 % This script first collects optical and metabolic cart data, 
 % combines them into study-specific .mat files, then stratifies the data 
@@ -42,7 +43,7 @@
 % ramp times are currently not output.
 %
 % Required functions/packages: Shape Language Modeling by John D'Errico
-% Updated 10-26-15 Brian
+
 
 %% Convert CSV to MAT and plot figures to correspond markers with study phase
 % Given a working directory with .csv data files from the metabolic cart
@@ -391,11 +392,13 @@ for iM = 1:numel(matfiles)
             
             [~, indTime] = sort(timeAxis);
             numVals = length(timeAxis); 
-            numBins = numVals/2;  % factor by which to divide data by,
-                                    % assuming data is in minutes, into
-                                    % 10 second bins. confirm via(A2-A1)*60
+            numBins = numVals/2;% factor by which to divide data by,
+                                % assuming data is in minutes, into
+                                % 10 second bins. TRS Machine currently
+                                % takes measurements every 5 seconds
+                                %confirm via(A2-A1)*60
 
-            % Linear split of time axis for non-uniform bins
+            % Linearly split time axis for possible non-uniform bins
             step = (1:numVals/numBins:numVals);
             if step(end)~=numVals, step = [step numVals+1]; end %#ok<AGROW>
             
@@ -453,7 +456,7 @@ for iM = 1:numel(matfiles)
                             ProcessedData.VarWorkRate.(currVar)(currWorkRate) = ...
                                 ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataTypeWR).(fadORfac).StudyPhases.Ramp.(currVar)(currWorkRate);
                         end
-                    end
+                    end % end variable assignment
                 end % end Ramp workrate data assignment
             end % end Phase loop
         end % end binned/raw loop
@@ -508,13 +511,13 @@ for iM = 1:numel(matfiles)
             end
 
             % Save figure
-                currPlot = ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataType).(fadORfac).SLMFigures.(currVar);
-                    slmFig = plotslm(currPlot);
-                    title(sprintf('SLM Fit for %s - %s',strrep(fileName,'_',' '),currVar));
-                    set(gcf,'Visible','off', 'Color', 'w');
-                cd([currDir '\SLM Plots'])
-                    export_fig(sprintf('%s - %s',strrep(fileName,'_',' '),currVar),'-png','-m1');
-                cd([currDir '\MAT Output'])
+%                 currPlot = ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataType).(fadORfac).SLMFigures.(currVar);
+%                     slmFig = plotslm(currPlot);
+%                     title(sprintf('SLM Fit for %s - %s',strrep(fileName,'_',' '),currVar));
+%                     set(gcf,'Visible','off', 'Color', 'w');
+%                 cd([currDir '\SLM Plots'])
+%                     export_fig(sprintf('%s - %s',strrep(fileName,'_',' '),currVar),'-png','-m1');
+%                 cd([currDir '\MAT Output'])
                 
             else
                 continue
@@ -624,114 +627,122 @@ for iInitials = 1:length(indInitials);
                 for iCurrDataType = 1:length(indCurrDataType)
                     currDataType = indCurrDataType{iCurrDataType};
                     
-                % Optical/bike data loops
-                OpticalIdentifier  = {'Brain','Muscle'};
-                ExerciseIdentifier = {'Bike'};
-                    if any(strncmp(currPFCorVL,OpticalIdentifier,4)) == 1
-                        indFADorFAC = fieldnames(ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType));
+                    % Optical/bike data loops
+                    OpticalIdentifier  = {'Brain','Muscle'};
+                    ExerciseIdentifier = {'Bike'};
+                        if any(strncmp(currPFCorVL,OpticalIdentifier,4)) == 1
+                        
+                        % Repeat optical output for phase data
+                        indCurrPhase = fieldnames(ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataType).(fadORfac).StudyPhases);
+                        for iCurrPhase = 1:length(indCurrPhase)
+                            currPhase = indCurrPhase{iCurrPhase};
+                            
+                            indFADorFAC = fieldnames(ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType));
 
-                        if any(strcmp('FAD',indFADorFAC)) == 1
-                        % Temp Structure for FAD output conforming to
-                        % Goutham's R scripts (rearranged to exclude FAC data)
-                        tempStruct  = [ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType).FAD.StudyPhases.Ramp];
+                            if any(strcmp('FAD',indFADorFAC)) == 1
+                            % Temp Structure for FAD output conforming to
+                            % Goutham's R scripts (rearranged to exclude FAC data)
+                            tempStruct  = [ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType).FAD.StudyPhases.(currPhase)];
 
-                        outputArr       = zeros(length(tempStruct(1,1).time),14);
-                        outputArr(:,1)  = tempStruct(1,1).time;
-                        outputArr(:,2)  = tempStruct(1,1).HbO2;
-                        outputArr(:,3)  = tempStruct(1,1).HbR;
-                        outputArr(:,4)  = tempStruct(1,1).THb;
-                        outputArr(:,5)  = tempStruct(1,1).stO2;
-                        outputArr(:,6) = tempStruct(1,1).SC1;
-                        outputArr(:,7) = tempStruct(1,1).SC2;
-                        outputArr(:,8) = tempStruct(1,1).SC3;
-                        outputArr(:,9) = tempStruct(1,1).AC1;
-                        outputArr(:,10) = tempStruct(1,1).AC2;
-                        outputArr(:,11) = tempStruct(1,1).AC3;
-                        outputArr(:,12) = tempStruct(1,1).PL1;
-                        outputArr(:,13) = tempStruct(1,1).PL2;
-                        outputArr(:,14) = tempStruct(1,1).PL3;
+                            outputArr       = zeros(length(tempStruct(1,1).time),14);
+                            outputArr(:,1)  = tempStruct(1,1).time;
+                            outputArr(:,2)  = tempStruct(1,1).HbO2;
+                            outputArr(:,3)  = tempStruct(1,1).HbR;
+                            outputArr(:,4)  = tempStruct(1,1).THb;
+                            outputArr(:,5)  = tempStruct(1,1).stO2;
+                            outputArr(:,6) = tempStruct(1,1).SC1;
+                            outputArr(:,7) = tempStruct(1,1).SC2;
+                            outputArr(:,8) = tempStruct(1,1).SC3;
+                            outputArr(:,9) = tempStruct(1,1).AC1;
+                            outputArr(:,10) = tempStruct(1,1).AC2;
+                            outputArr(:,11) = tempStruct(1,1).AC3;
+                            outputArr(:,12) = tempStruct(1,1).PL1;
+                            outputArr(:,13) = tempStruct(1,1).PL2;
+                            outputArr(:,14) = tempStruct(1,1).PL3;
 
-                        headers = {'time',...
-                                   'HbO2',...
-                                   'HbR',...
-                                   'THb',...
-                                   'stO2',...
-                                   'SC1',...
-                                   'SC2',...
-                                   'SC3',...
-                                   'AC1',...
-                                   'AC2',...
-                                   'AC3',...
-                                   'PL1',...
-                                   'PL2',...
-                                   'PL3',...                              
-                                   };
+                            headers = {'time',...
+                                       'HbO2',...
+                                       'HbR',...
+                                       'THb',...
+                                       'stO2',...
+                                       'SC1',...
+                                       'SC2',...
+                                       'SC3',...
+                                       'AC1',...
+                                       'AC2',...
+                                       'AC3',...
+                                       'PL1',...
+                                       'PL2',...
+                                       'PL3',...                              
+                                       };
 
-                        %Output datatable to .csv
-                        if any(strcmp('Raw',currDataType)) == 1
-                        filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' MAT' '.csv']; 
-                        else
-                            filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' MAT' ' Binned' '.csv']; 
-                        end
+                            %Output datatable to .csv
+                            if any(strcmp('Raw',currDataType)) == 1
+                            filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' '.csv']; 
+                            else
+                                filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' ' Binned' '.csv']; 
+                            end
+                            csv = sprintf('%s,',headers{:});
+                            csv(end) = '';
+                            cd([currDir '\CSV Output'])
+                            dlmwrite(filename,csv,'');
+                            dlmwrite(filename,outputArr,'-append','delimiter',',');
+                            cd(currDir)
+                            end
+                        end % End phase loop
+                        
+                        % Exercise data only loop
+                        elseif any(strncmp(indPFCorVL,ExerciseIdentifier,4)) == 1
+                            % Temp Structure for exe data output conforming to
+                            % Goutham's R scripts
+                            tempStruct = ExeDOSI.(currInitials).(currVisit).(currDate).Bike.(currDataType);
+                            outputArr       = zeros(length(tempStruct.time),13);
+                            outputArr(:,1)  = tempStruct.time;
+                            outputArr(:,2)  = tempStruct.VEO;
+                            outputArr(:,3)  = tempStruct.VEC;
+                            outputArr(:,4)  = tempStruct.PO;
+                            outputArr(:,5)  = tempStruct.PC;
+                            outputArr(:,6)  = tempStruct.VO2;
+                            outputArr(:,7)  = tempStruct.VOK;
+                            outputArr(:,8)  = tempStruct.VCO2;
+                            outputArr(:,9)  = tempStruct.VE;
+                            outputArr(:,10)  = tempStruct.HR;
+                            outputArr(:,11)  = tempStruct.RR;
+                            outputArr(:,12)  = tempStruct.RPM;
+                            outputArr(:,13)  = tempStruct.W;
+
+                            headers = {'time',...
+                                       'VEO',...
+                                       'VEC',...
+                                       'PO',...
+                                       'PC',...
+                                       'VO2',...
+                                       'VOK',...
+                                       'VCO2',...
+                                       'VE',...
+                                       'HR',...
+                                       'RR',...
+                                       'RPM',...
+                                       'Work',...                          
+                                       };
+
+                       %Output datatable to .csv
+                       if any(strcmp('Raw',currDataType)) == 1
+                        filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' '.csv']; 
+                       else
+                        filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' ' Binned' '.csv']; 
+                       end
                         csv = sprintf('%s,',headers{:});
                         csv(end) = '';
                         cd([currDir '\CSV Output'])
                         dlmwrite(filename,csv,'');
                         dlmwrite(filename,outputArr,'-append','delimiter',',');
                         cd(currDir)
-                        end
-                    % Exercise data only loop
-                    elseif any(strncmp(indPFCorVL,ExerciseIdentifier,4)) == 1
-                        % Temp Structure for exe data output conforming to
-                        % Goutham's R scripts
-                        tempStruct = ExeDOSI.(currInitials).(currVisit).(currDate).Bike.(currDataType);
-                        outputArr       = zeros(length(tempStruct.time),13);
-                        outputArr(:,1)  = tempStruct.time;
-                        outputArr(:,2)  = tempStruct.VEO;
-                        outputArr(:,3)  = tempStruct.VEC;
-                        outputArr(:,4)  = tempStruct.PO;
-                        outputArr(:,5)  = tempStruct.PC;
-                        outputArr(:,6)  = tempStruct.VO2;
-                        outputArr(:,7)  = tempStruct.VOK;
-                        outputArr(:,8)  = tempStruct.VCO2;
-                        outputArr(:,9)  = tempStruct.VE;
-                        outputArr(:,10)  = tempStruct.HR;
-                        outputArr(:,11)  = tempStruct.RR;
-                        outputArr(:,12)  = tempStruct.RPM;
-                        outputArr(:,13)  = tempStruct.W;
 
-                        headers = {'time',...
-                                   'VEO',...
-                                   'VEC',...
-                                   'PO',...
-                                   'PC',...
-                                   'VO2',...
-                                   'VOK',...
-                                   'VCO2',...
-                                   'VE',...
-                                   'HR',...
-                                   'RR',...
-                                   'RPM',...
-                                   'Work',...                          
-                                   };
+                        else
+                           % Found neither optical or exe data
 
-                   %Output datatable to .csv
-                   if any(strcmp('Raw',currDataType)) == 1
-                    filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' '.csv']; 
-                   else
-                    filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' ' Binned' '.csv']; 
-                   end
-                    csv = sprintf('%s,',headers{:});
-                    csv(end) = '';
-                    cd([currDir '\CSV Output'])
-                    dlmwrite(filename,csv,'');
-                    dlmwrite(filename,outputArr,'-append','delimiter',',');
-                    cd(currDir)
-
-                    else
-                       % Found neither optical or exe data
-                       
-                    end % End Bike/Optical loops
+                        end % End Bike/Optical loops
                 end % End binned/raw loop
             end % End PFC or VL loop
         end % End dates loop
