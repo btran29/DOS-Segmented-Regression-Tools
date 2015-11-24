@@ -1,4 +1,4 @@
-% Ver 11-22-15 Brian
+% Ver 11-23-15 Brian
 %% Data collection scripts for DOSI and metabolic cart data
 % This script first collects optical and metabolic cart data, 
 % combines them into study-specific .mat files, then stratifies the data 
@@ -314,9 +314,9 @@ for iM = 1:numel(matfiles)
     load(matfiles(iM).name);
     
     % Load study identifiers
-    initial = fileNameOutput{2};
+    initial = fileNameOutput{1};
     visit   = fileNameOutput{3};
-    date    = ['ddmmyy',fileNameOutput{4}]; % Only used to confirm visit # if req
+    date    = ['ddmmyy',fileNameOutput{2}]; % Only used to confirm visit # if req
 
     % Remove dashes in date format to be compatible with structure variable
     date = strrep(date,'-','');
@@ -537,7 +537,9 @@ for iM = 1:numel(matfiles)
         % Set default data type (binned or raw)
         currDataType = 'Raw';
 
-        % Assign Variable Data
+        % Assign variable data
+        
+        % Raw data
         vars = fieldnames(VariableData.(currDataType));
         for iVar = 1:length(vars)
             currVar = vars{iVar};
@@ -549,6 +551,50 @@ for iM = 1:numel(matfiles)
             % To current MAT file
             ProcessedData.Bike = VariableData.(currDataType).(currVar);
         end
+        
+        % Binned Data
+        
+        % Define binning parameters based on study phase time axis data
+        timeAxis = ExeDOSI.(initial).(visit).(date).Bike.Raw.time;
+        
+        % Define bin edges
+        factor   = 10/60; % bins of 10 seconds of data in minutes
+        binEdges = timeAxis(1):factor:timeAxis(end)+factor; % add an extra step
+
+        % Bin available variables in data
+        indBinningVars = fieldnames(ExeDOSI.(initial).(visit).(date).Bike.Raw);
+        for iRawData = 1:length(indBinningVars)
+            
+            % Define variables to be binned
+            currVarToBin = indBinningVars{iRawData};
+            currVarToBinData = ExeDOSI.(initial).(visit).(date).Bike.Raw.(currVarToBin);
+            
+            % Initialize method variables
+            binMeans   = NaN(length(binEdges),1);
+
+            % Loop through each bin
+            for i = 1:length(binEdges)-1; 
+                % Initialize/reset flags
+                flagForBin = false(length(currVarToBinData),1);
+
+                % Flag data that fits into current bin
+                allIdx = 1:numel(currVarToBinData);
+                idx = allIdx(timeAxis >= binEdges(i) & timeAxis <= binEdges(i+1));
+                flagForBin(idx) = true;
+
+                % Assign data to bin and mean
+                binMeans(i,1) = mean(currVarToBinData(flagForBin));
+            end
+
+            % Remove NaNs
+            binMeans = binMeans(~isnan(binMeans));
+
+            % Assign binned data
+             ExeDOSI.(initial).(visit).(date).Bike.Binned.(currVarToBin) = ...
+                 binMeans;
+
+        end % End binning procedure over all variables
+        
 
     % For matfiles not recognized as bike or optical data:
     else
@@ -686,7 +732,10 @@ for iInitials = 1:length(indInitials);
                             %Output datatable to .csv
                             if any(strcmp('Raw',currDataType)) == 1
                             filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' '.csv']; 
-                            else
+                            elseif any(strcmp('Binned',currDataType)) == 1 % Binned Data
+                                replacementTimeAxis = transpose(linspace(0,10*numel(outputArr(:,1)),numel(outputArr(:,1))+1));
+                                replacementTimeAxis = replacementTimeAxis(1:end-1);
+                                outputArr(:,1) = replacementTimeAxis;
                                 filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' ' Binned' '.csv']; 
                             end
                             csv = sprintf('%s,',headers{:});
@@ -736,7 +785,10 @@ for iInitials = 1:length(indInitials);
                        %Output datatable to .csv
                        if any(strcmp('Raw',currDataType)) == 1
                         filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' '.csv']; 
-                       else
+                       elseif any(strcmp('Binned',currDataType)) == 1 % Binned Data
+                        replacementTimeAxis = transpose(linspace(0,10*numel(outputArr(:,1)),numel(outputArr(:,1))+1));
+                        replacementTimeAxis = replacementTimeAxis(1:end-1);
+                        outputArr(:,1) = replacementTimeAxis;
                         filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' ' Binned' '.csv']; 
                        end
                         csv = sprintf('%s,',headers{:});
