@@ -113,6 +113,7 @@ for iFiles = 1:length(csvFiles);
 
     % Generate study identifier variable
     fileName = strrep(currFileName,'.csv','');
+    fileName = strrep(fileName,'_',' ');
     fileName = strrep(fileName,'''','');
     fileNameOutput = strsplit(fileName,' ');
 
@@ -390,17 +391,10 @@ for iM = 1:numel(matfiles)
             % Define binning parameters based on study phase time axis data
             timeAxis = ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase).time;
             
-            [~, indTime] = sort(timeAxis);
-            numVals = length(timeAxis); 
-            numBins = numVals/2;% factor by which to divide data by,
-                                % assuming data is in minutes, into
-                                % 10 second bins. TRS Machine currently
-                                % takes measurements every 5 seconds
-                                %confirm via(A2-A1)*60
+            % Define bin edges
+            factor   = 10/60; % bins of 10 seconds of data in minutes
+            binEdges = timeAxis(1):factor:timeAxis(end)+factor; % add an extra step
 
-            % Linearly split time axis for possible non-uniform bins
-            step = (1:numVals/numBins:numVals);
-            if step(end)~=numVals, step = [step numVals+1]; end %#ok<AGROW>
             
             % Bin available variables in study phase
             indBinningVars = fieldnames(ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase));
@@ -410,16 +404,29 @@ for iM = 1:numel(matfiles)
                 currVarToBin     = indBinningVars{iRawData};
                 currVarToBinData = ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase).(indBinningVars{iRawData});
 
-                % Populate new time axis with corresponding response variable data
-                binMean = zeros(length(step)-1,1);
-                for i = 1 : length(step)-1    
-                    bin = indTime(step(i):step(i+1)-1);
-                    binMean(i,1) = mean(currVarToBinData(bin));
+                % Initialize method variables
+                binMeans   = NaN(length(binEdges),1);
+
+                % Loop through each bin
+                for i = 1:length(binEdges)-1; 
+                    % Initialize/reset flags
+                    flagForBin = false(length(currVarToBinData),1);
+
+                    % Flag data that fits into current bin
+                    allIdx = 1:numel(currVarToBinData);
+                    idx = allIdx(timeAxis >= binEdges(i) & timeAxis <= binEdges(i+1));
+                    flagForBin(idx) = true;
+
+                    % Assign data to bin and mean
+                    binMeans(i,1) = mean(currVarToBinData(flagForBin));
                 end
+
+                % Remove NaNs
+                binMeans = binMeans(~isnan(binMeans));
                 
                 % Assign binned data
                  ExeDOSI.(initial).(visit).(date).(pfcORvl).Binned.(fadORfac).StudyPhases.(currPhase).(currVarToBin) = ...
-                     binMean;
+                     binMeans;
 
             end % End binning procedure
         end % End raw/binned/workRate data assignment by study phase
