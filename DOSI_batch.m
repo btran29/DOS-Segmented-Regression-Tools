@@ -1,10 +1,10 @@
-% Ver 11-24-15 Brian
+% Ver 11-24-15 v2 Brian
 %% Data collection scripts for DOSI and metabolic cart data
 % This script first collects optical and metabolic cart data, 
 % combines them into study-specific .mat files, then stratifies the data 
 % into study phases related to exercise. Twenty-second bins and raw data
 % are output. The user must input which study marker corresponds with each
-% study phase in an automatically generated workbook (DOSI&Bike_input.xlsx)
+% study phase in an automatically generated workbook (dosi batch input.xlsx)
 % within the working directory prior to completing data cleanup.
 %
 % During this process, SLM engine is invoked for breakpoint analyis;
@@ -57,8 +57,8 @@ csvFiles = dir('*.csv');
 
 % Make new folder to save MAT converted files
 currDir = pwd;
-if exist([pwd '\MAT Output'],'dir') == 0
-    mkdir('MAT Output')
+if exist([pwd '\Data in Matlab m format'],'dir') == 0
+    mkdir('Data in Matlab m format')
 end
 
 for iFiles = 1:length(csvFiles);
@@ -120,7 +120,7 @@ for iFiles = 1:length(csvFiles);
     disp([' ' fileName])
 
     % Save all variables except those listed below
-    cd([currDir '\Mat Output'])
+    cd([currDir '\Data in Matlab m format'])
     save(fileName, '-regexp', '^(?!(csvFiles|iFiles|currFile|currFileName)$).')
     cd(currDir)
     
@@ -141,7 +141,7 @@ end
 
 % Switch to MAT output directory
 currDir = pwd;
-cd([currDir '\MAT Output'])
+cd([currDir '\Data in Matlab m format'])
 
 % Pre-allocate and generate file list
 matfiles = dir('*.mat');
@@ -175,12 +175,12 @@ end
 cd(currDir)
 
 % Excel Output
-filename = 'DOSI&Bike_input.xlsx';
+filename = 'dosi batch input.xlsx';
 xlswrite(filename,headers,2,'A1');
 xlswrite(filename,matnames,2,'A2');
 fprintf('\nGenerated input.xlsx in current directory from csv files in current directory:\n')
 disp(currDir)
-fprintf('\nNote: New data is in 2nd sheet of DOSI&Bike_input.xlsx \n')
+fprintf('\nNote: New data is in 2nd sheet of "dosi batch input.xlsx" \n')
 
 % Open ActiveX COM server to rename excel sheets
 e = actxserver('Excel.Application'); 
@@ -215,12 +215,12 @@ fprintf('\nGenerating figures to locate study phases\n')
 currDir = pwd;
 
 % Make figures folder if it doesn't exist and set current directory 
-if exist([currDir '\Study phase plots'],'dir') == 0
-    mkdir('Study phase plots')
+if exist([currDir '\Plots - Raw data with study phase markers'],'dir') == 0
+    mkdir('Plots - Raw data with study phase markers')
 end
 
 % Switch to MAT output directory
-cd([currDir '\MAT Output'])
+cd([currDir '\Data in Matlab m format'])
 
 % Generate file list
 matfiles = dir('*mat');
@@ -254,9 +254,9 @@ for iM = 1:numel(matfiles)
 
 
             % Save into new folder
-            cd([currDir '\Study phase plots'])
+            cd([currDir '\Plots - Raw data with study phase markers'])
             export_fig(sprintf('%s',fileName),'-png','-m2');
-            cd([currDir '\MAT Output'])
+            cd([currDir '\Data in Matlab m format'])
         end
     
     catch StudyPhaseLoopErr
@@ -277,10 +277,10 @@ prompt = '\n Have the study phases been located and entered into the input\n wor
 x = input(prompt);
 
 %% Load input.xlsx
-% Load manually located study phases from 'DOSI&Bike_input.xlsx' prior to
+% Load manually located study phases from 'dosi batch input.xlsx' prior to
 % starting the batch loop.
 
-studyPhases     = importdata('DOSI&Bike_input.xlsx');
+studyPhases     = importdata('dosi batch input.xlsx');
 fileList        = studyPhases.textdata.input(2:end,1);
 inRampBeginning = studyPhases.data.input(:,1);
 inRampEnd       = studyPhases.data.input(:,2);
@@ -301,7 +301,7 @@ binSize = 10/60; % 10 seconds of data in minutes
 
 % Switch to MAT output directory
 currDir = pwd;
-cd([currDir '\MAT Output'])
+cd([currDir '\Data in Matlab m format'])
 
 % Generate file list
 matfiles = dir('*mat');
@@ -317,9 +317,9 @@ for iM = 1:numel(matfiles)
     load(matfiles(iM).name);
     
     % Load study identifiers
-    initial = fileNameOutput{1};
+    initial = fileNameOutput{2};
     visit   = fileNameOutput{3};
-    date    = ['ddmmyy',fileNameOutput{2}]; % Only used to confirm visit # if req
+    date    = ['ddmmyy',fileNameOutput{4}]; % Only used to confirm visit # if req
 
     % Remove dashes in date format to be compatible with structure variable
     date = strrep(date,'-','');
@@ -482,10 +482,10 @@ for iM = 1:numel(matfiles)
         % ramp data generated in the previous section is required
 
         % Generate figure directory
-        if exist([currDir '\SLM Plots'],'dir') == 0
+        if exist([currDir '\Plots - Matlab threshold analysis (SLM)'],'dir') == 0
             cd(currDir)
-            mkdir('SLM Plots')
-            cd([currDir '\MAT Output'])
+            mkdir('Plots - Matlab threshold analysis (SLM)')
+            cd([currDir '\Data in Matlab m format'])
         end
 
         % Assign data and generate figures
@@ -525,9 +525,9 @@ for iM = 1:numel(matfiles)
                     slmFig = plotslm(currPlot);
                     title(sprintf('SLM Fit for %s - %s',strrep(fileName,'_',' '),currVar));
                     set(gcf,'Visible','off', 'Color', 'w');
-                cd([currDir '\SLM Plots'])
+                cd([currDir '\Plots - Matlab threshold analysis (SLM)'])
                     export_fig(sprintf('%s - %s',strrep(fileName,'_',' '),currVar),'-png','-m1');
-                cd([currDir '\MAT Output'])
+                cd([currDir '\Data in Matlab m format'])
                 
             else
                 continue
@@ -626,13 +626,13 @@ filename3 = 'ExeDOSI.mat';
 timeGenerated = datestr(now);
 
 % Make folder and set current directory if it doesn't exist
-if exist([currDir '\Structure Var Output'],'dir') == 0
+if exist([currDir '\Data in Matlab nested structure variable'],'dir') == 0
     cd(currDir)
-    mkdir('Structure Var Output')
+    mkdir('Data in Matlab nested structure variable')
 end
 
 % Save into new folder
-cd([currDir '\Structure Var Output'])
+cd([currDir '\Data in Matlab nested structure variable'])
 save(filename3, 'ExeDOSI','timeGenerated');
 fprintf('\nSaved data to structure variable.\n');
 cd(currDir)
@@ -649,9 +649,9 @@ fprintf('\nGenerating re-organized CSV files for R threshold analysis: \n')
 
 % Make output folders and set current directory if it doesn't exist
 currDir = pwd; 
-if exist([pwd '\CSV Output'],'dir') == 0
-    mkdir('CSV Output')
-    mkdir('CSV Output - Binned')
+if exist([pwd '\Data split by study phase'],'dir') == 0
+    mkdir('Data split by study phase')
+    mkdir('Data split by study phase - Binned')
 end
 
 % Access the data for all subjects from ExeDOSI superstructure
@@ -740,14 +740,14 @@ for iInitials = 1:length(indInitials);
                             % Raw Data
                             if any(strcmp('Raw',currDataType)) == 1
                                 filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' '.csv']; 
-                                cd([currDir '\CSV Output'])
+                                cd([currDir '\Data split by study phase'])
                              
                             % Binned Data
                             elseif any(strcmp('Binned',currDataType)) == 1 
                                 replacementTimeAxis = transpose(linspace(0,10*numel(outputArr(:,1)),numel(outputArr(:,1))+1));
                                 outputArr(:,1) = replacementTimeAxis(1:end-1);
                                 filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' ' Binned' '.csv']; 
-                                cd([currDir '\CSV Output - Binned'])
+                                cd([currDir '\Data split by study phase - Binned'])
                             end % end Raw/binned output conditional
                             
                             % Generate and append Column labels
@@ -802,14 +802,14 @@ for iInitials = 1:length(indInitials);
                        % Raw data
                        if any(strcmp('Raw',currDataType)) == 1
                         filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' '.csv']; 
-                        cd([currDir '\CSV Output'])
+                        cd([currDir '\Data split by study phase'])
                         
                        % Binned Data
                        elseif any(strcmp('Binned',currDataType)) == 1
                         replacementTimeAxis = transpose(linspace(0,10*numel(outputArr(:,1)),numel(outputArr(:,1))+1));
                         outputArr(:,1) = replacementTimeAxis(1:end-1);
                         filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' ' Binned' '.csv']; 
-                        cd([currDir '\CSV Output - Binned'])
+                        cd([currDir '\Data split by study phase - Binned'])
                        end % end Raw/binned output conditional
                        
                         % Generate and append Column labels
