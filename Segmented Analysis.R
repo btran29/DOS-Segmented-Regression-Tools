@@ -308,7 +308,7 @@ for(i in 1:length(csv))
   }
 
   # Collect study data in global environment
-  studyData  <- list(bpOutput,bpOutput2)
+  studyData  <- list(bpOutput,bpOutput2,maxWRData)
   if(exists("ExeDOSI")==FALSE){
     ExeDOSI    <- vector(mode="list", length=length(csv))
   }
