@@ -1,4 +1,4 @@
-% Ver 11-23-15 Brian
+% Ver 11-24-15 Brian
 %% Data collection scripts for DOSI and metabolic cart data
 % This script first collects optical and metabolic cart data, 
 % combines them into study-specific .mat files, then stratifies the data 
