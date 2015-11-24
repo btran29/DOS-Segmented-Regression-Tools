@@ -111,7 +111,7 @@ for iFiles = 1:length(csvFiles);
 
 
 
-    % Generate study identifier variable
+    % Generate study identifier variable after cleaning up name
     fileName = strrep(currFileName,'.csv','');
     fileName = strrep(fileName,'_',' ');
     fileName = strrep(fileName,'''','');
@@ -296,6 +296,9 @@ inPedalingEnd   = studyPhases.data.input(:,5);
 % at key work-rate time points, and runs the SLM analysis.
 fprintf('Organizing and assigning data to structure variable...\n');
 
+% Binned data factor - define bin size in units of raw data
+binSize = 10/60; % 10 seconds of data in minutes
+
 % Switch to MAT output directory
 currDir = pwd;
 cd([currDir '\MAT Output'])
@@ -392,7 +395,7 @@ for iM = 1:numel(matfiles)
             timeAxis = ExeDOSI.(initial).(visit).(date).(pfcORvl).Raw.(fadORfac).StudyPhases.(currPhase).time;
             
             % Define bin edges
-            factor   = 10/60; % bins of 10 seconds of data in minutes
+            factor   = binSize; % bins of 10 seconds of data in minutes
             binEdges = timeAxis(1):factor:timeAxis(end)+factor; % add an extra step
 
             
@@ -432,7 +435,7 @@ for iM = 1:numel(matfiles)
         end % End raw/binned/workRate data assignment by study phase
 
         
-        % Work rate key time-points for raw/binned ramp data only %
+        % Work rate key time-points for raw/binned ramp data %
         indDataType = fieldnames(ExeDOSI.(initial).(visit).(date).(pfcORvl));
         for iDataType = 1:size(indDataType);
         currDataTypeWR = indDataType{iDataType};
@@ -518,13 +521,13 @@ for iM = 1:numel(matfiles)
             end
 
             % Save figure
-%                 currPlot = ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataType).(fadORfac).SLMFigures.(currVar);
-%                     slmFig = plotslm(currPlot);
-%                     title(sprintf('SLM Fit for %s - %s',strrep(fileName,'_',' '),currVar));
-%                     set(gcf,'Visible','off', 'Color', 'w');
-%                 cd([currDir '\SLM Plots'])
-%                     export_fig(sprintf('%s - %s',strrep(fileName,'_',' '),currVar),'-png','-m1');
-%                 cd([currDir '\MAT Output'])
+                currPlot = ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataType).(fadORfac).SLMFigures.(currVar);
+                    slmFig = plotslm(currPlot);
+                    title(sprintf('SLM Fit for %s - %s',strrep(fileName,'_',' '),currVar));
+                    set(gcf,'Visible','off', 'Color', 'w');
+                cd([currDir '\SLM Plots'])
+                    export_fig(sprintf('%s - %s',strrep(fileName,'_',' '),currVar),'-png','-m1');
+                cd([currDir '\MAT Output'])
                 
             else
                 continue
@@ -558,7 +561,7 @@ for iM = 1:numel(matfiles)
         timeAxis = ExeDOSI.(initial).(visit).(date).Bike.Raw.time;
         
         % Define bin edges
-        factor   = 10/60; % bins of 10 seconds of data in minutes
+        factor   = binSize; % bins of 10 seconds of data in minutes
         binEdges = timeAxis(1):factor:timeAxis(end)+factor; % add an extra step
 
         % Bin available variables in data
@@ -644,10 +647,11 @@ cd(currDir)
 
 fprintf('\nGenerating re-organized CSV files for R threshold analysis: \n')
 
-% Make output folder and set current directory if it doesn't exist
+% Make output folders and set current directory if it doesn't exist
 currDir = pwd; 
 if exist([pwd '\CSV Output'],'dir') == 0
     mkdir('CSV Output')
+    mkdir('CSV Output - Binned')
 end
 
 % Access the data for all subjects from ExeDOSI superstructure
@@ -684,14 +688,16 @@ for iInitials = 1:length(indInitials);
                     OpticalIdentifier  = {'Brain','Muscle'};
                     ExerciseIdentifier = {'Bike'};
                         if any(strncmp(currPFCorVL,OpticalIdentifier,4)) == 1
-                        
+
+                        % Set label to FAD (vestige variable from FAD & FAC processing)    
+                        currFadORfac = 'FAD';
+                        indFADorFAC = fieldnames(ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType));
+
                         % Repeat optical output for phase data
-                        indCurrPhase = fieldnames(ExeDOSI.(initial).(visit).(date).(pfcORvl).(currDataType).(fadORfac).StudyPhases);
+                        indCurrPhase = fieldnames(ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType).(currFadORfac).StudyPhases);
                         for iCurrPhase = 1:length(indCurrPhase)
                             currPhase = indCurrPhase{iCurrPhase};
-                            
-                            indFADorFAC = fieldnames(ExeDOSI.(currInitials).(currVisit).(currDate).(currPFCorVL).(currDataType));
-
+                                                       
                             if any(strcmp('FAD',indFADorFAC)) == 1
                             % Temp Structure for FAD output conforming to
                             % Goutham's R scripts (rearranged to exclude FAC data)
@@ -730,21 +736,30 @@ for iInitials = 1:length(indInitials);
                                        };
 
                             %Output datatable to .csv
+                            
+                            % Raw Data
                             if any(strcmp('Raw',currDataType)) == 1
-                            filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' '.csv']; 
-                            elseif any(strcmp('Binned',currDataType)) == 1 % Binned Data
+                                filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' '.csv']; 
+                                cd([currDir '\CSV Output'])
+                             
+                            % Binned Data
+                            elseif any(strcmp('Binned',currDataType)) == 1 
                                 replacementTimeAxis = transpose(linspace(0,10*numel(outputArr(:,1)),numel(outputArr(:,1))+1));
-                                replacementTimeAxis = replacementTimeAxis(1:end-1);
-                                outputArr(:,1) = replacementTimeAxis;
+                                outputArr(:,1) = replacementTimeAxis(1:end-1);
                                 filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' currPFCorVL ' ' currPhase ' MAT' ' Binned' '.csv']; 
-                            end
+                                cd([currDir '\CSV Output - Binned'])
+                            end % end Raw/binned output conditional
+                            
+                            % Generate and append Column labels
                             csv = sprintf('%s,',headers{:});
-                            csv(end) = '';
-                            cd([currDir '\CSV Output'])
+                            csv(end) = '';                           
                             dlmwrite(filename,csv,'');
                             dlmwrite(filename,outputArr,'-append','delimiter',',');
+                            
+                            % Reset working directory 
                             cd(currDir)
-                            end
+                            
+                            end % End FAD conditional
                         end % End phase loop
                         
                         % Exercise data only loop
@@ -783,24 +798,30 @@ for iInitials = 1:length(indInitials);
                                        };
 
                        %Output datatable to .csv
+                       
+                       % Raw data
                        if any(strcmp('Raw',currDataType)) == 1
                         filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' '.csv']; 
-                       elseif any(strcmp('Binned',currDataType)) == 1 % Binned Data
+                        cd([currDir '\CSV Output'])
+                        
+                       % Binned Data
+                       elseif any(strcmp('Binned',currDataType)) == 1
                         replacementTimeAxis = transpose(linspace(0,10*numel(outputArr(:,1)),numel(outputArr(:,1))+1));
-                        replacementTimeAxis = replacementTimeAxis(1:end-1);
-                        outputArr(:,1) = replacementTimeAxis;
+                        outputArr(:,1) = replacementTimeAxis(1:end-1);
                         filename = [currInitials ' ' currVisit ' ' strrep(currDate,'ddmmyy','') ' ' 'Exe' ' MAT' ' Binned' '.csv']; 
-                       end
+                        cd([currDir '\CSV Output - Binned'])
+                       end % end Raw/binned output conditional
+                       
+                        % Generate and append Column labels
                         csv = sprintf('%s,',headers{:});
                         csv(end) = '';
-                        cd([currDir '\CSV Output'])
                         dlmwrite(filename,csv,'');
                         dlmwrite(filename,outputArr,'-append','delimiter',',');
+                        
+                        % Reset working directory 
                         cd(currDir)
 
-                        else
-                           % Found neither optical or exe data
-
+                        else % Found neither optical or exe data
                         end % End Bike/Optical loops
                 end % End binned/raw loop
             end % End PFC or VL loop
@@ -813,7 +834,7 @@ end % End subject loop
 % to loop at any level of the structure (e.g. subject-wise analysis,
 % optical or exercise-only analysis, etc.)
 %
-% Current functions:
+% Current uses:
 %   1) Matching DOSI with equivalent exercise data, obtain relative 
 %      threshold timing (e.g. fraction of ramp)
 %   2) Save output to ExeDOSI structure variable
