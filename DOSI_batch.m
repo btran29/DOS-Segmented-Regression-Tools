@@ -1,4 +1,4 @@
-% Ver 11-24-15 v2 Brian
+% Ver 11-26-15 Brian
 %% Data collection scripts for DOSI and metabolic cart data
 % This script first collects optical and metabolic cart data, 
 % combines them into study-specific .mat files, then stratifies the data 
@@ -62,31 +62,82 @@ if exist([pwd '\Data in Matlab m format'],'dir') == 0
 end
 
 for iFiles = 1:length(csvFiles);
-    currFile = importdata(csvFiles(iFiles).name);
-    csvData = currFile;
+    currFile     = importdata(csvFiles(iFiles).name);
+    csvHeaders   = currFile.textdata(1,:);
+    csvData      = currFile;
     currFileName = mat2str(csvFiles(iFiles).name);
 
     % Distinguish between FAD/FAC DOSI and Bike/Cart data via file name
     if isempty(strfind(currFileName,'Bike')) == 1
 
+        % Locate column headers
+        
+        % Column labels to find in csv files. Must match EXACTLY with
+        % what is found in the data before it can be assigned.
+        colHeaders =  {'HbO2', ...
+                       'Hb', ... 
+                       'tHb', ...
+                       'SO2', ...
+                       'ElapsTime',...
+                       'Marker',...
+                       'SC1',...
+                       'SC2',...
+                       'SC3',...
+                       'AC1',...
+                       'AC2',...
+                       'AC3',...
+                       'PL1',...
+                       'PL2',...
+                       'PL3'
+                       };
+
+        % Given variables of interest above, find location %
+
+        % Initialize variables
+        foundCols = zeros(1,numel(colHeaders)); % Column locs
+        idxCsvHeaders = 1:numel(csvHeaders); % Index of columns
+
+        % Loop for each column header of interest
+        try
+            for iFoundCols = 1:length(colHeaders)
+                % Flag matching column as true
+                colMatch = strcmp(colHeaders(iFoundCols),csvHeaders);
+
+                % Assign
+                foundCols(iFoundCols) = idxCsvHeaders(colMatch);
+            end
+
+            % Shift found cols by two (as the 'n' and Date Time' columns
+            % are not read into an array by the importdata function)
+            if any(strcmp('n',csvHeaders)) && any(strcmp('Date Time',csvHeaders))
+                foundCols = foundCols-2;
+            end
+
+        catch rawDataColumnLabelError
+            warning(...
+            'Double check column headers in raw data or in var colHeaders')
+            throw(rawDataColumnLabelError)
+        end
+
+        
         % Raw Data
-        VariableData.Raw.HbO2 = currFile.data(:,37);
-        VariableData.Raw.HbR  = currFile.data(:,39);
-        VariableData.Raw.THb  = currFile.data(:,41);
-        VariableData.Raw.stO2 = currFile.data(:,43);
+        VariableData.Raw.HbO2 = currFile.data(:,foundCols(1));
+        VariableData.Raw.HbR  = currFile.data(:,foundCols(2));
+        VariableData.Raw.THb  = currFile.data(:,foundCols(3));
+        VariableData.Raw.stO2 = currFile.data(:,foundCols(4));
 
-        VariableData.Raw.time    = currFile.data(:,1);
-        VariableData.Raw.markers = currFile.data(:,3);
+        VariableData.Raw.time    = currFile.data(:,foundCols(5));
+        VariableData.Raw.markers = currFile.data(:,foundCols(6));
 
-        VariableData.Raw.SC1 = currFile.data(:,31);
-        VariableData.Raw.SC2 = currFile.data(:,33);
-        VariableData.Raw.SC3 = currFile.data(:,35);
-        VariableData.Raw.AC1 = currFile.data(:,25);
-        VariableData.Raw.AC2 = currFile.data(:,27);
-        VariableData.Raw.AC3 = currFile.data(:,29);
-        VariableData.Raw.PL1 = currFile.data(:,22);
-        VariableData.Raw.PL2 = currFile.data(:,23);
-        VariableData.Raw.PL3 = currFile.data(:,24);
+        VariableData.Raw.SC1 = currFile.data(:,foundCols(7));
+        VariableData.Raw.SC2 = currFile.data(:,foundCols(8));
+        VariableData.Raw.SC3 = currFile.data(:,foundCols(9));
+        VariableData.Raw.AC1 = currFile.data(:,foundCols(10));
+        VariableData.Raw.AC2 = currFile.data(:,foundCols(11));
+        VariableData.Raw.AC3 = currFile.data(:,foundCols(12));
+        VariableData.Raw.PL1 = currFile.data(:,foundCols(13));
+        VariableData.Raw.PL2 = currFile.data(:,foundCols(14));
+        VariableData.Raw.PL3 = currFile.data(:,foundCols(15));
 
     elseif isempty(strfind(currFileName,'Bike')) == 0
 
@@ -108,8 +159,6 @@ for iFiles = 1:length(csvFiles);
     else
         fprintf('Unrecognized data file error on %s \n',currFileName);
     end
-
-
 
     % Generate study identifier variable after cleaning up name
     fileName = strrep(currFileName,'.csv','');
