@@ -193,7 +193,7 @@ for(i in 1:length(csv))
   # Get base file name for outputs
   outputFileName <- paste(workingDir,"/rawOut_",paste(substr(csv[i],1,13)),"_", sep="")
 
-  # Function to collect individual breakpoint data
+  ## Function to collect individual breakpoint data
   collectBPdata <- function(arg1){
     # Pre-allocate temporary vectors
       # Segmented variables of interest
@@ -273,7 +273,7 @@ for(i in 1:length(csv))
                 paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE, row.names=FALSE)
   }
 
-  # Collect data at maximum work-rate
+  ## Collect data at maximum work-rate
 
   # Initialize vectors
   maxWR <- max(W)
@@ -307,8 +307,104 @@ for(i in 1:length(csv))
                 paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE, row.names=FALSE)
   }
 
+  ## Collect data at minimum work-rate
+
+  # Find equivalent exercise indicies
+  equivExeTime       <- head(W, n=1)[[1]][1] # Min wattage
+  indLequivExeTime   <- which(equivExeTime==exeTime)
+  indUequivExeTime   <- which(abs((equivExeTime-(10/60))-exeTime)==min(abs((equivExeTime-(10/60))-exeTime)))
+
+  # Average data over first 10s of exercise
+  AvgVOK      <- mean(VOK$y[indLequivExeTime[1]:indUequivExeTime[1]])
+  AvgVOKstDev <- sd(VOK$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+  AvgHR       <- mean(HR$y[indLequivExeTime[1]:indUequivExeTime[1]])
+  AvgHRstDev  <- sd(HR$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+  AvgVE       <- mean(VE$y[indLequivExeTime[1]:indUequivExeTime[1]])
+  AvgVEstDev  <- sd(VE$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+  # Collect all exercise averaged data into a data frame
+  minWRData <- data.frame(AvgVOK,AvgVOKstDev,
+                          AvgHR,AvgHRstDev,
+                          AvgVE,AvgVEstDev)
+
+  # Write minimum work-rate data into table
+  write.table(paste(substr(csv[i],1,4),"Minimum work-rate data",sep=" "),
+              paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE,row.names=FALSE)
+
+  for(iMinWRData in 1:length(minWRData)){
+    write.table(minWRData[iMinWRData],
+                paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE, row.names=FALSE)
+  }
+
+
+  # Collect data at 20, 40, 60, 80% of max
+  percentageWRData <- function(argv){
+
+    # Initialize vectors
+    bpAvgW        <- vector()
+    bpAvgWstDev   <- vector()
+    bpAvgVOK      <- vector()
+    bpAvgVOKstDev <- vector()
+    bpAvgHR       <- vector()
+    bpAvgHRstDev  <- vector()
+    bpAvgVE       <- vector()
+    bpAvgVEstDev  <- vector()
+
+    # Get time at percentage of max
+    percentageTime <- argv*exeTime
+
+    # Time over which to average (e.g. 5/60 = 5 seconds +/- time-point of interest)
+    factor <- (5/60)
+
+    # Find equivalent exercise data by averaging exe data +/- factor noted by breakpoint
+    # Get equivalent time indicies +/- factor noted by breakpoint
+    equivExeTime       <- exeTime[which(abs(percentageTime-exeTime)==min(abs(percentageTime-exeTime)))]
+    indLequivExeTime   <- which(abs((equivExeTime-factor)-exeTime)==min(abs((equivExeTime-factor)-exeTime)))
+    indUequivExeTime   <- which(abs((equivExeTime+factor)-exeTime)==min(abs((equivExeTime+factor)-exeTime)))
+
+    # Average exe data over +/- factor from breakpoint
+    AvgW        <- mean(W$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgWstDev   <- sd(W$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+    AvgVOK      <- mean(VOK$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgVOKstDev <- sd(VOK$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+    AvgHR       <- mean(HR$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgHRstDev  <- sd(HR$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+    AvgVE       <- mean(VE$y[indLequivExeTime[1]:indUequivExeTime[1]])
+    AvgVEstDev  <- sd(VE$y[indLequivExeTime[1]:indUequivExeTime[1]])
+
+    # Collect all exercise averaged data into a data frame
+    perWRData <- data.frame(AvgW,AvgWstDev,
+                          AvgVOK,AvgVOKstDev,
+                            AvgHR,AvgHRstDev,
+                            AvgVE,AvgVEstDev)
+
+    return(perWRData)
+
+  }
+
+  # Generate list of inputs to find timepoints of interest
+  perWRoutput <- list(E.Twenty = 0.2, E.Forty = 0.4, E.Sixty = 0.6, E.Eighty = 0.8)
+
+  # Collect individual timepoint data all timepoints of interest
+  perWROutput2 <- sapply(perWRoutput, percentageWRData,simplify=FALSE,USE.NAMES=TRUE)
+
+  # Write timepoint data into table
+  write.table(paste(substr(csv[i],1,4),"Time-point work-rate data",sep=" "),
+              paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE,row.names=FALSE)
+
+  for(iPerTPData in 1:length(perWROutput2)){
+    write.table(perWROutput2[iPerTPData],
+                paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE, row.names=FALSE)
+  }
+
+
   # Collect study data in global environment
-  studyData  <- list(bpOutput,bpOutput2,maxWRData)
+  studyData  <- list(bpOutput,bpOutput2,maxWRData,minWRData)
   if(exists("ExeDOSI")==FALSE){
     ExeDOSI    <- vector(mode="list", length=length(csv))
   }
