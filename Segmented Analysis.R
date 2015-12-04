@@ -353,10 +353,10 @@ for(i in 1:length(csv))
     bpAvgVEstDev  <- vector()
 
     # Get time at percentage of max
-    percentageTime <- argv*exeTime
+    percentageTime <- argv*max(exeTime)
 
     # Time over which to average (e.g. 5/60 = 5 seconds +/- time-point of interest)
-    factor <- (5/60)
+    factor <- 0
 
     # Find equivalent exercise data by averaging exe data +/- factor noted by breakpoint
     # Get equivalent time indicies +/- factor noted by breakpoint
