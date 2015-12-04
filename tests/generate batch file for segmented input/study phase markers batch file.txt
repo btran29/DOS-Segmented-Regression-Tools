@@ -1,0 +1,4 @@
+"File"	"SpecifSegmentedBPs"	"FirstGuess"	"SecondGuess"
+"EXO-1 AmDa V3 11-11-11 PFC Processed.csv"	0	0	0
+"EXO-1 AmDa V4 22-22-22 PFC Processed.csv"	0	0	0
+"EXO-2 AuLi V1 22-22-22 PFC Processed.csv"	0	0	0

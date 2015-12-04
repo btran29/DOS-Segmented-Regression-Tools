@@ -3,7 +3,7 @@
 #		Split it by spaces, then compare with other studies in the file-list
 #		until EXE study with same EXO, date, & visit is found
 #		Meant to be used in relation to an index of optical data
-#	Output: index of exercise study
+#	Output: index of exercise study in relation to total csv
 exeEquivCSV <- function(argv){
 	split	<- strsplit(argv," ")
 	exo		<- split[[1]][1]
