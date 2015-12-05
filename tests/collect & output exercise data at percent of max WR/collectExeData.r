@@ -12,33 +12,38 @@ collectExeData <- function(argv){
 	# Factor over which to average data
 	span = (5/60)
 
+	# Subfunction to find index of closest value
+	findClosest <- function(value,lookHere){
+		ind	<- which(abs((value)-lookHere)==min(abs((value)-lookHere)))
+		return(ind)
+	}
 
 	if(argv == 1){
 	# Case for max W
 		equivExeTime       <- tail(W, n=1)[[1]][1]
-		indLequivExeTime   <- which(abs((equivExeTime-2*span)-exeTime)==min(abs((equivExeTime-2*span)-exeTime)))
+		indLequivExeTime   <- findClosest((equivExeTime-2*span),exeTime)
 		indUequivExeTime   <- which(equivExeTime==exeTime)
 	} else if(argv == 0){
 	# Case for min W
 		equivExeTime       <- head(W, n=1)[[1]][1]
 		indLequivExeTime   <- which(equivExeTime==exeTime)
-		indUequivExeTime   <- which(abs((equivExeTime+2*span)-exeTime)==min(abs((equivExeTime+2*span)-exeTime)))
+		indUequivExeTime   <- findClosest((equivExeTime+2*span),exeTime)
 	} else {
 	# Case for all other percentages of W
-		equivExeTime	     <- exeTime[which(abs(percentExeTime-exeTime)==min(abs(percentExeTime-exeTime)))]
-		indLequivExeTime   <- which(abs((equivExeTime-span)-exeTime)==min(abs((equivExeTime-span)-exeTime)))
-		indUequivExeTime   <- which(abs((equivExeTime+span)-exeTime)==min(abs((equivExeTime+span)-exeTime)))
+		equivExeTime		<- exeTime[findClosest(percentExeTime,exeTime)]
+		indLequivExeTime	<- findClosest((equivExeTime-span),exeTime)
+		indUequivExeTime	<- findClosest((equivExeTime+span),exeTime)
 
 	}
 
 	# Initialize vectors to collect data
-	AvgW			<- vector()
-	AvgWstDev		<- vector()
-	AvgVOK			<- vector()
+	AvgW			    <- vector()
+	AvgWstDev     <- vector()
+	AvgVOK			  <- vector()
 	AvgVOKstDev		<- vector()
-	AvgHR			<- vector()
+	AvgHR			    <- vector()
 	AvgHRstDev		<- vector()
-	AvgVE			<- vector()
+	AvgVE			    <- vector()
 	AvgVEstDev		<- vector()
 
 
