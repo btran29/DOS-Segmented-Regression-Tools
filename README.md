@@ -2,6 +2,7 @@
 A collection of R scripts used to batch-analyze diffuse optical spectroscopy and metabolic cart data via piecewise linear regression.
 
 ![](https://github.com/btran29/DOSI-SLM-SegmentedOut/blob/master/example/fig1.PNG)
+
 Example figure for deoxygenated hemoglobin levels in a healthy human subject throughout a standardized ramped-cycling challenge.
 
 #### R-only workflow
