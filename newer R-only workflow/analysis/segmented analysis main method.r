@@ -49,6 +49,8 @@ for(study in 1:length(dosStudies)){
 	
 	
 	# Assign data in files to data frames #
+	
+	
 	# Assign DOS or EXE-specific time axes, normalizing DOS to begin at 0
 	Time     <- dosData$time
 	normTime <- Time-min(Time)
@@ -85,6 +87,8 @@ for(study in 1:length(dosStudies)){
 		
 		
 	# Run segmented #
+	
+	
 	# Obtain breakpoints input for segmented function
 	segmentedMethod	<- table$SpecifSegmentedBPs[study]
 	segmentedBP1	<- table$FirstGuess[study]
@@ -96,45 +100,46 @@ for(study in 1:length(dosStudies)){
 				simplify=FALSE,USE.NAMES=TRUE)
 		
 		
-	# Collect BP data
+	# Collect and output BP data
+	
+	
+	# Set span over which to mean exercise data for each breakpoint
+	span = (5/60) # Mean +/- 5 seconds, assuming data in minutes
+	
+	
+	# Output BP data using span and collectBPdata function
+	bpOutput2<-sapply(bpOutput,collectBPdata,span,simplify=FALSE,USE.NAMES=TRUE)
+	
+	
+	# Write segmented data into a csv file
+	setwd(breakpointDataFolder)
+		writeBPdata(bpOutput,bpOutput2,outputFileName)
+	setwd("..")
+	
+	
+	# Collect and output exercise data
+	setwd(percentExerciseDataFolder)
+		writeExeData(collectExeData(0,span=0),"MinWR",outputFileName)
+		writeExeData(collectExeData(0.2,span=0),"E20",outputFileName)
+		writeExeData(collectExeData(0.4,span=0),"E40",outputFileName)
+		writeExeData(collectExeData(0.6,span=0),"E60",outputFileName)
+		writeExeData(collectExeData(0.8,span=0),"E80",outputFileName)
+		writeExeData(collectExeData(1,span=0),"MaxWR",outputFileName)
+	setwd("..")
 		
-		# Set span over which to mean exercise data for each breakpoint
-		span = (5/60) # Mean +/- 5 seconds, assuming data in minutes
 		
-		
-		# Output BP data using span and collectBPdata function
-		bpOutput2<-sapply(bpOutput,collectBPdata,span,simplify=FALSE,USE.NAMES=TRUE)
-		
-		
-		# Write segmented data into a csv file
-		setwd(breakpointDataFolder)
-			writeBPdata(bpOutput,bpOutput2,outputFileName)
-		setwd("..")
-		
-		
-		# Collect and output exercise data
-		setwd(percentExerciseDataFolder)
-			writeExeData(collectExeData(0,span=0),"MinWR",outputFileName)
-			writeExeData(collectExeData(0.2,span=0),"E20",outputFileName)
-			writeExeData(collectExeData(0.4,span=0),"E40",outputFileName)
-			writeExeData(collectExeData(0.6,span=0),"E60",outputFileName)
-			writeExeData(collectExeData(0.8,span=0),"E80",outputFileName)
-			writeExeData(collectExeData(1,span=0),"MaxWR",outputFileName)
-		setwd("..")
-		
-		
-	# Figures
+	# Figures #
 
-		# Plot figures - Used try statements as some data is known to be too 
-		# noisy to all have breakpoints or successful
-		setwd(segmentedFiguresFolder)
-			pdf(paste(outputFileName," Figures.pdf",sep=""))
-			try({bpFigures(bpOutput$HbR,"Time (min)","[HbR] (uM)","PFC HbR")})
-			try({bpFigures(bpOutput$stO2,"Time (min)","stO2 (uM)","PFC stO2")})
-			try({bpFigures(bpOutput$HbO2,"Time (min)","HbO2 (uM)","PFC HbO2")})
-			try({bpFigures(bpOutput$THb,"Time (min)","THb (uM)","PFC THb")})
-			try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
-			try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
-			dev.off()
-		setwd("..")
+	# Plot figures - Used try statements as some data is known to be too 
+	# noisy to all have breakpoints or successful
+	setwd(segmentedFiguresFolder)
+		pdf(paste(outputFileName," Figures.pdf",sep=""))
+		try({bpFigures(bpOutput$HbR,"Time (min)","[HbR] (uM)","PFC HbR")})
+		try({bpFigures(bpOutput$stO2,"Time (min)","stO2 (uM)","PFC stO2")})
+		try({bpFigures(bpOutput$HbO2,"Time (min)","HbO2 (uM)","PFC HbO2")})
+		try({bpFigures(bpOutput$THb,"Time (min)","THb (uM)","PFC THb")})
+		try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
+		try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
+		dev.off()
+	setwd("..")
 }
