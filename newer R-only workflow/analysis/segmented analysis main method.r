@@ -69,17 +69,10 @@ for(study in 1:length(dosStudies)){
 									exeData$HR,
 									exeData$RR,
 									exeData$Work)
-			
-			
-		# Function to convert data into a linear model
-		linearize <- function(yaxis,xaxis){
-			varData		<- data.frame(x=xaxis,y=yaxis)
-			linearMod	<- lm(y~x,data=varData)
-			return(linearMod)
-		}
 		
 		
-		# Linearize data, using a dos or exe-specific time axis
+		# Conver data to linear models (without any transformations), 
+		# using a dos or exe-specific time axis
 		lm.DOSdata	<- sapply(varDosData,linearize,xaxis=normTime,
 						simplify=FALSE,USE.NAMES = TRUE)
 		lm.EXEdata	<- sapply(varExeData,linearize,xaxis=exeTime,
