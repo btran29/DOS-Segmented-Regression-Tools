@@ -6,7 +6,7 @@
 #			+/- span (e.g. +/- 5 seconds)
 #		compile this data into a data frame
 # Output: data frame
-collectBPdata <- function(argv,span){
+collectBPdata <- function(argv,span,hasExeData){
   # Pre-allocate temporary vectors
   # Segmented variables of interest
   bpEstX      <- vector()
@@ -18,6 +18,7 @@ collectBPdata <- function(argv,span){
   confDiff    <- vector()
 
   # Exercise variables of interest
+  if(hasExeData){
   bpAvgW        <- vector()
   bpAvgWstDev   <- vector()
   bpAvgVOK      <- vector()
@@ -76,17 +77,49 @@ collectBPdata <- function(argv,span){
     bpAvgVE,bpAvgVEstDev,
     bpRelTime)
   return(confintData)
+  } else{
+   try({
+    # Try statement ensures that there is an array for sapply, even if
+    # there is no applicable data
+      if(!is.null(attributes(argv$psi)$dimnames[[2]][2])){
+        # Check for estimate "Est." attribute provided by 'segmented' with valid breakpoints
+
+        for (iConfint in 1:length(argv$psi[,2])){
+          # Collect confint data
+          bpEstX[iConfint]   <- confint(argv)[[1]][[iConfint]]
+          bpEstY[iConfint]   <- argv$fitted.values[which(abs(argv$psi[iConfint,2]-argv$model$x)==
+                                                           min(abs(argv$psi[iConfint,2]-argv$model$x)))]
+          lConf[iConfint]    <- confint(argv)[[1]][length(argv$psi[,2])*1+iConfint]
+          uConf[iConfint]    <- confint(argv)[[1]][length(argv$psi[,2])*2+iConfint]
+          confDiff[iConfint] <- abs(lConf[iConfint]-bpEstX[iConfint])
+
+          # Find breakpoint time/total ramp time
+          bpRelTime[iConfint] <- bpEstX[iConfint]/max(normTime)
+        }
+      }
+
+      confintData <- data.frame(
+        # Segmented variables of interest
+        bpEstX,
+        bpEstY,
+        lConf,
+        uConf,
+        confDiff,
+        bpRelTime)
+      return(confintData)
+    }) # end try statement
+  } # end hasExeData conditional
 }
 
 # Function to write BP data into tables with output filenames
 writeBPdata <- function(bpOutput,bpOutput2,outputFileName){
 	for(ibpOutput in 1:length(bpOutput2)){
 	  write.table(paste(names(bpOutput)[ibpOutput]),
-				  paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE,
+				  paste(outputFileName,"BPData.csv",sep=" "), sep=",", append=TRUE,
 				  row.names=FALSE)
 				  
 	  write.table(bpOutput2[ibpOutput],
-				  paste(outputFileName,"Data.csv",sep=""), sep=",", append=TRUE,
+				  paste(outputFileName,"BPData.csv",sep=" "), sep=",", append=TRUE,
 				  row.names=FALSE)
 	}
 }
@@ -95,7 +128,7 @@ writeBPdata <- function(bpOutput,bpOutput2,outputFileName){
 bpFigures <- function(variable,xAxisLabel,yAxisLabel,title){
 	# Variable data over a 12 minute time axis
 	plot(variable$model$x,variable$model$y, xlim=c(min(normTime),
-		(min(normTime)+13)), ann=FALSE)
+		(max(normTime))), ann=FALSE)
 	# Labels after base data points
 	mtext(side = 1, text = xAxisLabel, line = 2)
 	mtext(side = 2, text = yAxisLabel, line = 2)
