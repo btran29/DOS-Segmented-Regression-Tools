@@ -9,8 +9,9 @@ generateBatchSeg <- function(keywords,fileName){
 	csv	<- dir(pattern="*.csv")
 
 	# Locate optical data by keyword
-	csvData		<- csv[grepl("Processed",csv)]
-	csvData		<- csvData[grepl(keywords,csvData)]
+	csvData		<- csv[grepl("R",csv)] # Processed identifier
+	csvData		<- csvData[grepl("Ramp",csvData)] # Ramp identifier
+	csvData		<- csvData[grepl(keywords,csvData)] # Additional identifiers
 
 	# Temporary data-table
 	default <- vector(mode = "numeric",length = (length(csvData)))
