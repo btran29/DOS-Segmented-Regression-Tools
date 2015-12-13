@@ -14,119 +14,119 @@ splitByMarker <- function(keywords,batchFileDir,batchFile){
 	table <- read.csv(batchFile, header=TRUE)
   setwd("..")
 
-	# Locate all applicable files for threshold analysis
-	csv	<- dir(pattern="*.csv")
+ # Locate all applicable files for threshold analysis
+  csv	<- dir(pattern="*.csv")
 
-	# Locate optical data by keyword
-	csvData	<- csv[grepl(keywords,csv)]
+  # Locate optical data by keyword
+  csvData	<- csv[grepl(keywords,csv)]
 
-	# Folder output
-	dir.create("Data split by study phase")
-	dir.create("Data split by study phase - binned")
+  # Folder output
+  dir.create("Data split by study phase")
+  dir.create("Data split by study phase - binned")
 
-	# Locate index of ea. study for each file
-	for(file in 1:length(csvData)){
-		rampBeg	<-	table[[2]][file]
-		rampEnd	<-	table[[3]][file]
-		pedBeg	<-	table[[4]][file]
-		recovBeg<-	table[[5]][file]
-		pedEnd	<-	table[[6]][file]
-
-
-		# Load file, assumes CSV with a column called 'Marker'
-		data <- read.csv(csv[file])
-		indRampBeg	<-	which(data$Marker==rampBeg)[1] #First val only
-		indRampEnd	<-	which(data$Marker==rampEnd)[1] # if duplicate
-		indPedBeg	<-	which(data$Marker==pedBeg)[1]
-		indRecovBeg	<-	which(data$Marker==recovBeg)[1]
-		indPedEnd	<-	which(data$Marker==pedEnd)[1]
+  # Locate index of ea. study for each file
+  for(file in 1:length(csvData)){
+    rampBeg	<-	table[[2]][file]
+    rampEnd	<-	table[[3]][file]
+    pedBeg	<-	table[[4]][file]
+    recovBeg<-	table[[5]][file]
+    pedEnd	<-	table[[6]][file]
 
 
-		# Rearrange columns to match previous 14-column format,
-		# assuming original TRS column-labels are kept
-		reorganized <-	data.frame(data$ElapsTime,data$HbO2,
-		                          data$Hb,data$tHb,data$SO2,
-						                  data$SC1,data$SC2,data$SC3,
-						                  data$AC1,data$AC2,data$AC3,
-						                  data$PL1,data$PL2,data$PL3)
-										  
-		# Clean up column names
-		headers <- colnames(reorganized)
-		headers <- gsub("data.", "", headers)
-		colnames(reorganized) <- headers
-		
+    # Load file, assumes CSV with a column called 'Marker'
+    data <- read.csv(csv[file])
+    indRampBeg	<-	which(data$Marker==rampBeg)[1] #First val only
+    indRampEnd	<-	which(data$Marker==rampEnd)[1] # if duplicate
+    indPedBeg	<-	which(data$Marker==pedBeg)[1]
+    indRecovBeg	<-	which(data$Marker==recovBeg)[1]
+    indPedEnd	<-	which(data$Marker==pedEnd)[1]
 
 
-		# Define phases via marker data
-		allphases	<-	reorganized
-		baseline	<-	reorganized[1:(indRampBeg[1]-1),]
-		ramp		<-	reorganized[indRampBeg[1]:(indRampEnd[1]-1),]
-		recovery	<-	reorganized[indRampEnd[1]:(length(data[,1])),]
+    # Rearrange columns to match previous 14-column format,
+    # assuming original TRS column-labels are kept
+    reorganized <-	data.frame(data$ElapsTime,data$HbO2,
+                              data$Hb,data$tHb,data$SO2,
+                              data$SC1,data$SC2,data$SC3,
+                              data$AC1,data$AC2,data$AC3,
+                              data$PL1,data$PL2,data$PL3)
+
+    # Clean up column names
+    headers <- colnames(reorganized)
+    headers <- gsub("data.", "", headers)
+    colnames(reorganized) <- headers
 
 
-		# Bin Data
-		binSizes = 10/60 # 10 seconds over data in minutes
 
-		allphases.binned	<-	data.frame(sapply(allphases,uneqBinMeans,
-							binSize=binSizes,timeAxis=allphases$ElapsTime))
-		baseline.binned		<-	data.frame(sapply(baseline,uneqBinMeans,
-							binSize=binSizes,timeAxis=baseline$ElapsTime))
-		ramp.binned			<-	data.frame(sapply(ramp,uneqBinMeans,
-							binSize=binSizes,timeAxis=ramp$ElapsTime))
-		recovery.binned		<-	data.frame(sapply(recovery,uneqBinMeans,
-							binSize=binSizes,timeAxis=recovery$ElapsTime))
+    # Define phases via marker data
+    allphases	<-	reorganized
+    baseline	<-	reorganized[1:(indRampBeg[1]-1),]
+    ramp		<-	reorganized[indRampBeg[1]:(indRampEnd[1]-1),]
+    recovery	<-	reorganized[indRampEnd[1]:(length(data[,1])),]
 
 
-		# Generate meaningful time axis for binned data
+    # Bin Data
+    binSizes = 10/60 # 10 seconds over data in minutes
 
-		# New vars for code clarity
-		al <- allphases.binned$ElapsTime
-		ba <- baseline.binned$ElapsTime
-		ra <- ramp.binned$ElapsTime
-		re <- recovery.binned$ElapsTime
-
-		allphases.binned$ElapsTime <- seq(from=0,to=(length(al)*10)+10,
-		                                       by=10)[1:length(al)]
-
-		baseline.binned$ElapsTime <- seq(from=0,to=(length(ba)*10)+10,
-		                                      by=10)[1:length(ba)]
-
-		ramp.binned$ElapsTime <- seq(from=0,to=(length(ra)*10)+10,
-		                                  by=10)[1:length(ra)]
-
-		recovery.binned$ElapsTime <- seq(from=0,to=(length(re)*10)+10,
-		                                      by=10)[1:length(re)]
+    allphases.binned	<-	data.frame(sapply(allphases,uneqBinMeans,
+                                          binSize=binSizes,timeAxis=allphases$ElapsTime))
+    baseline.binned		<-	data.frame(sapply(baseline,uneqBinMeans,
+                                          binSize=binSizes,timeAxis=baseline$ElapsTime))
+    ramp.binned			<-	data.frame(sapply(ramp,uneqBinMeans,
+                                       binSize=binSizes,timeAxis=ramp$ElapsTime))
+    recovery.binned		<-	data.frame(sapply(recovery,uneqBinMeans,
+                                          binSize=binSizes,timeAxis=recovery$ElapsTime))
 
 
-		# Get current file for output file name
-		outputFileName	<- paste(gsub(".csv","",csvData[file]),"Processed",sep=" ")
+    # Generate meaningful time axis for binned data
+
+    # New vars for code clarity
+    al <- allphases.binned$ElapsTime
+    ba <- baseline.binned$ElapsTime
+    ra <- ramp.binned$ElapsTime
+    re <- recovery.binned$ElapsTime
+
+    allphases.binned$ElapsTime <- seq(from=0,to=(length(al)*10)+10,
+                                      by=10)[1:length(al)]
+
+    baseline.binned$ElapsTime <- seq(from=0,to=(length(ba)*10)+10,
+                                     by=10)[1:length(ba)]
+
+    ramp.binned$ElapsTime <- seq(from=0,to=(length(ra)*10)+10,
+                                 by=10)[1:length(ra)]
+
+    recovery.binned$ElapsTime <- seq(from=0,to=(length(re)*10)+10,
+                                     by=10)[1:length(re)]
 
 
-		# Output unbinned data
-		setwd("Data split by study phase")
-		write.table(allphases,paste(outputFileName," All Phases",".csv",sep=""),
-		append=FALSE,row.names=FALSE,sep=",")
-		write.table(baseline,paste(outputFileName," Baseline",".csv",sep=""),
-		append=FALSE,row.names=FALSE,sep=",")
-		write.table(ramp,paste(outputFileName," Ramp",".csv",sep=""),
-		append=FALSE,row.names=FALSE,sep=",")
-		write.table(recovery,paste(outputFileName," Recovery",".csv",sep=""),
-		append=FALSE,row.names=FALSE,sep=",")
-		setwd("..")
+    # Get current file for output file name
+    outputFileName	<- paste(gsub(".csv","",csvData[file]),"R",sep=" ")
 
 
-		# Output binned data
-		setwd("Data split by study phase - binned")
-		write.table(allphases.binned,paste(outputFileName," All Phases - Binned",
-		".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-		write.table(baseline.binned,paste(outputFileName," Baseline - Binned",
-		".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-		write.table(ramp.binned,paste(outputFileName," Ramp - Binned",
-		".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-		write.table(recovery.binned,paste(outputFileName," Recovery - Binned",
-		".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-		setwd("..")
-	}
+    # Output unbinned data
+    setwd("Data split by study phase")
+    write.table(allphases,paste(outputFileName," All Phases",".csv",sep=""),
+                append=FALSE,row.names=FALSE,sep=",")
+    write.table(baseline,paste(outputFileName," Baseline",".csv",sep=""),
+                append=FALSE,row.names=FALSE,sep=",")
+    write.table(ramp,paste(outputFileName," Ramp",".csv",sep=""),
+                append=FALSE,row.names=FALSE,sep=",")
+    write.table(recovery,paste(outputFileName," Recovery",".csv",sep=""),
+                append=FALSE,row.names=FALSE,sep=",")
+    setwd("..")
+
+
+    # Output binned data
+    setwd("Data split by study phase - binned")
+    write.table(allphases.binned,paste(outputFileName," All Phases - Binned",
+                                       ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
+    write.table(baseline.binned,paste(outputFileName," Baseline - Binned",
+                                      ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
+    write.table(ramp.binned,paste(outputFileName," Ramp - Binned",
+                                	  ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
+    write.table(recovery.binned,paste(outputFileName," Recovery - Binned",
+                                      ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
+    setwd("..")
+  }
 
 
 }
