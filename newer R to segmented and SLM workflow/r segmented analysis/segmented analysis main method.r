@@ -24,9 +24,7 @@ source('collectExeData.r') # Includes collectExeData, writeExeData
 breakpointDataFolder		<- "breakpoint data"
 percentExerciseDataFolder	<- "percent exercise data"
 segmentedFiguresFolder		<- "segmented figures"
-dir.create(breakpointDataFolder, showWarnings=FALSE)
-dir.create(percentExerciseDataFolder, showWarnings=FALSE)
-dir.create(segmentedFiguresFolder,showWarnings=FALSE)
+
 
 # Get working directory
 workingDir <- getwd()
@@ -40,6 +38,19 @@ dosStudies	<- csv[grep(keyWords,csv)]
 
 # Obtain study-specific breakpoint guess inputs for segmented function
 table <- read.csv(file.path(workingDir,"batch files","segmentedBatchFile.csv"))
+
+
+# Create directories
+dir.create(percentExerciseDataFolder, showWarnings=FALSE)
+dir.create(breakpointDataFolder, showWarnings=FALSE)
+dir.create(segmentedFiguresFolder,showWarnings=FALSE)
+dir.create(file.path(workingDir,segmentedFiguresFolder,"HbR"),showWarnings = FALSE)
+dir.create(file.path(workingDir,segmentedFiguresFolder,"stO2"),showWarnings = FALSE)
+dir.create(file.path(workingDir,segmentedFiguresFolder,"HbO2"),showWarnings = FALSE)
+dir.create(file.path(workingDir,segmentedFiguresFolder,"THb"),showWarnings = FALSE)
+dir.create(file.path(workingDir,segmentedFiguresFolder,"VE"),showWarnings = FALSE)
+dir.create(file.path(workingDir,segmentedFiguresFolder,"PETCO2"),showWarnings = FALSE)
+
 
 
 # Loop for each optical data file
@@ -185,7 +196,7 @@ for(study in 1:length(dosStudies)){
 	# Figures #
 
 	tiffoutput <- function(VarName){
-	    fileName <- file.path(workingDir,segmentedFiguresFolder,paste(VarName,outputFileName,"Figure.tiff",sep=" "))
+	    fileName <- file.path(workingDir,segmentedFiguresFolder,VarName,paste(VarName,outputFileName,"Figure.tiff",sep=" "))
 		  tiff(fileName, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
 	}
 
