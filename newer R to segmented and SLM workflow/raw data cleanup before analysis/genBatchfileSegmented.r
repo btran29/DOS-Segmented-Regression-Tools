@@ -20,9 +20,8 @@ generateBatchSeg <- function(keywords,fileName){
 
 	# Write batch input table in csv format in separate folder
 	dir.create("batch files", showWarnings = FALSE)
-	setwd("batch files")
-	write.table(table,paste(fileName,".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-  setwd("..")
+	write.table(table,file.path(getwd(),"batch files",paste(fileName,".csv",sep="")),append=FALSE,row.names=FALSE,sep=",")
+
 }
 
 # Test code #

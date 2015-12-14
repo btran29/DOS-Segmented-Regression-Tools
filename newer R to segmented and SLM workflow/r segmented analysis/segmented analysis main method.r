@@ -16,7 +16,7 @@ library(segmented)
 # Assumes scripts are in the working directory. Manually source if need be
 source('exeEquivCSV.r') # Includes exeEquivCSV
 source('dosSegmented.r') # Includes DOSI.segmented, linearize
-source('collectBPdata.r') # Includes collectBPdata, writeBPData, bpFigures 
+source('collectBPdata.r') # Includes collectBPdata, writeBPData, bpFigures
 source('collectExeData.r') # Includes collectExeData, writeExeData
 
 
@@ -28,6 +28,9 @@ dir.create(breakpointDataFolder, showWarnings=FALSE)
 dir.create(percentExerciseDataFolder, showWarnings=FALSE)
 dir.create(segmentedFiguresFolder,showWarnings=FALSE)
 
+# Get working directory
+workingDir <- getwd()
+
 
 # List studies of interest
 csv			<- dir(pattern="*csv")
@@ -36,47 +39,50 @@ dosStudies	<- csv[grep(keyWords,csv)]
 
 
 # Obtain study-specific breakpoint guess inputs for segmented function
-setwd("batch files")
-	table <- read.csv("segmentedBatchFile.csv")
-setwd("..")
+table <- read.csv(file.path(workingDir,"segmentedBatchFile.csv"))
 
 
 # Loop for each optical data file
 for(study in 1:length(dosStudies)){
 
+
 	# Filename for output
 	outputFileName	<- gsub(".csv", "", dosStudies[study])
-	
+
+
 	if(hasExeData){
 	# Locate equivalent exercise study
 	equivExeStudy	<- exeEquivCSV(dosStudies[study],csv,
-					locEXO=1,locVisit=3,locDate=4)	
+					locEXO=1,locVisit=3,locDate=4)
 	}
+
 
 	# Read csv files into data tables
 	dosData	<-	read.csv(dosStudies[study])
-	
+
+
 	if(hasExeData){
 	exeData	<-	read.csv(csv[equivExeStudy])
 	}
-	
+
+
 	# Assign data in files to data frames #
-	
-	
+
+
 	# Assign DOS or EXE-specific time axes, normalizing DOS to begin at 0
 	Time     <- dosData$time
 	normTime <- Time-min(Time)
-	
+
 	if(hasExeData){
 	exeTime  <- exeData$time
 	}
-	
+
 	# Make data frames from variables of interest
 		HbO2  <- data.frame(x=normTime, y=dosData$HbO2)
 		HbR   <- data.frame(x=normTime, y=dosData$HbR)
 		THb   <- data.frame(x=normTime, y=dosData$THb)
 		stO2  <- data.frame(x=normTime, y=dosData$stO2)
-		
+
 		if(hasExeData){
 		  VEO <- data.frame(x=exeTime, y=exeData$VEO)
 		  VEC <- data.frame(x=exeTime, y=exeData$VEC)
@@ -92,8 +98,8 @@ for(study in 1:length(dosStudies)){
 		  W   <- data.frame(x=exeTime, y=exeData$Work)
 		}
 
-	
-	# Conver data to linear models (without any transformations), 
+
+	# Conver data to linear models (without any transformations),
 	# using a dos or exe-specific time axis
 	lin	<- list(
 	  "HbO2"  = lm.BO  <- lm(y~x,data=HbO2),
@@ -116,37 +122,38 @@ for(study in 1:length(dosStudies)){
 	    "RPM" = lm.RPM <- lm(y~x,data=RPM)
 	  )
 	}
-	
+
 	# Combine to run segmented
 	if(hasExeData){
 		lin <- c(lin,lm.EXEdata)
-	}	
-		
+	}
+
+
 	# Run segmented #
-	
-	
+
 	# Obtain breakpoints input for segmented function
 	segmentedMethod	<- table$SpecifSegmentedBPs[study]
 	segmentedBP1	<- table$FirstGuess[study]
 	segmentedBP2	<- table$SecondGuess[study]
-	
+
+
 	# Run segmented
 	bpOutput	<- sapply(lin,DOSI.segmented,
 				segmentedMethod,segmentedBP1,segmentedBP2,
 				simplify=FALSE,USE.NAMES=TRUE)
-		
-		
+
+
 	# Compare BP data with exe data
 	if(hasExeData){
-	
+
 	# Set span over which to mean exercise data for each breakpoint
 	span = (5/60) # Mean +/- 5 seconds, assuming data in minutes
-	
-	
+
+
 	# Output BP data using span and collectBPdata function
 	bpOutput2<-sapply(bpOutput,collectBPdata,span,simplify=FALSE,USE.NAMES=TRUE)
-	
-	
+
+
 	# Collect and output exercise data
 	setwd(percentExerciseDataFolder)
 		writeExeData(collectExeData(0,span=0),"MinWR",outputFileName)
@@ -158,21 +165,21 @@ for(study in 1:length(dosStudies)){
 	setwd("..")
 	} else {
 		  bpOutput2 <-sapply(bpOutput,collectBPdata,span,hasExeData=FALSE,simplify=FALSE,USE.NAMES=TRUE)
-		}	
-	
-	
+	}
+
+
 	# Write segmented data into a csv file
 	setwd(breakpointDataFolder)
 		writeBPdata(bpOutput,bpOutput2,outputFileName)
 	setwd("..")
-	
-	
+
+
 	# Figures #
 
-	# Plot figures - Used try statements as some data is known to be too 
+	# Plot figures - Used try statements as some data is known to be too
 	# noisy to all have breakpoints or successful
 	setwd(segmentedFiguresFolder)
-	
+
 		tiffoutput <- function(VarName){
   		  tiff(paste(VarName,outputFileName,"Figure.tiff",sep=" "), units = "px", width = 600, height = 600, res = NA, compression = "lzw")
   		}
@@ -197,10 +204,10 @@ for(study in 1:length(dosStudies)){
   			try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
   			try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
   			}
-  			
+
 	setwd("..")
-	
-	
+
+
 	# Remove data for each study after output to tables and figures to prevent writing
 	# previous study's data to the next study
 	remove(bpOutput)
