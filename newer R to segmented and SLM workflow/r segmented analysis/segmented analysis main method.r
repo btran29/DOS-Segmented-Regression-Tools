@@ -85,25 +85,25 @@ for(study in 1:length(dosStudies)){
 	colnames(dosData) <- headers
 
 	# Make data frames from variables of interest
-		HbO2  <- data.frame(x=normTime, y=dosData$HbO2)
-		HbR   <- data.frame(x=normTime, y=dosData$HbR)
-		tHb   <- data.frame(x=normTime, y=dosData$tHb)
-		stO2  <- data.frame(x=normTime, y=dosData$stO2)
+	HbO2  <- data.frame(x=normTime, y=dosData$HbO2)
+	HbR   <- data.frame(x=normTime, y=dosData$HbR)
+	tHb   <- data.frame(x=normTime, y=dosData$tHb)
+	stO2  <- data.frame(x=normTime, y=dosData$stO2)
 
-		if(hasExeData){
-		  VEO <- data.frame(x=exeTime, y=exeData$VEO)
-		  VEC <- data.frame(x=exeTime, y=exeData$VEC)
-		  PO  <- data.frame(x=exeTime, y=exeData$PO)
-		  PC  <- data.frame(x=exeTime, y=exeData$PC)
-		  VO  <- data.frame(x=exeTime, y=exeData$VO2)
-		  VOK <- data.frame(x=exeTime, y=exeData$VOK)
-		  VC  <- data.frame(x=exeTime, y=exeData$VCO2)
-		  VE  <- data.frame(x=exeTime, y=exeData$VE)
-		  HR  <- data.frame(x=exeTime, y=exeData$HR)
-		  RR  <- data.frame(x=exeTime, y=exeData$RR)
-		  RPM <- data.frame(x=exeTime, y=exeData$RPM)
-		  W   <- data.frame(x=exeTime, y=exeData$Work)
-		}
+	if(hasExeData){
+	  VEO <- data.frame(x=exeTime, y=exeData$VEO)
+	  VEC <- data.frame(x=exeTime, y=exeData$VEC)
+	  PO  <- data.frame(x=exeTime, y=exeData$PO)
+	  PC  <- data.frame(x=exeTime, y=exeData$PC)
+	  VO  <- data.frame(x=exeTime, y=exeData$VO2)
+	  VOK <- data.frame(x=exeTime, y=exeData$VOK)
+	  VC  <- data.frame(x=exeTime, y=exeData$VCO2)
+	  VE  <- data.frame(x=exeTime, y=exeData$VE)
+	  HR  <- data.frame(x=exeTime, y=exeData$HR)
+	  RR  <- data.frame(x=exeTime, y=exeData$RR)
+	  RPM <- data.frame(x=exeTime, y=exeData$RPM)
+	  W   <- data.frame(x=exeTime, y=exeData$Work)
+	}
 
 
 	# Conver data to linear models (without any transformations),
@@ -153,66 +153,70 @@ for(study in 1:length(dosStudies)){
 	# Compare BP data with exe data
 	if(hasExeData){
 
-	# Set span over which to mean exercise data for each breakpoint
-	span = (5/60) # Mean +/- 5 seconds, assuming data in minutes
+  	# Set span over which to mean exercise data for each breakpoint
+  	span = (5/60) # Mean +/- 5 seconds, assuming data in minutes
 
 
-	# Output BP data using span and collectBPdata function
-	bpOutput2<-sapply(bpOutput,collectBPdata,span,simplify=FALSE,USE.NAMES=TRUE)
+  	# Output BP data using span and collectBPdata function
+  	bpOutput2<-sapply(bpOutput,collectBPdata,span,simplify=FALSE,USE.NAMES=TRUE)
 
 
-	# Collect and output exercise data
-	setwd(percentExerciseDataFolder)
-		writeExeData(collectExeData(0,span=0),"MinWR",outputFileName)
-		writeExeData(collectExeData(0.2,span=0),"E20",outputFileName)
-		writeExeData(collectExeData(0.4,span=0),"E40",outputFileName)
-		writeExeData(collectExeData(0.6,span=0),"E60",outputFileName)
-		writeExeData(collectExeData(0.8,span=0),"E80",outputFileName)
-		writeExeData(collectExeData(1,span=0),"MaxWR",outputFileName)
-	setwd("..")
+  	# Collect and output exercise data
+  	exeDataFileName <- file.path(workingDir,percentExerciseDataFolder,outputFileName)
+  	writeExeData(collectExeData(0,span=0),"MinWR",exeDataFileName)
+  	writeExeData(collectExeData(0.2,span=0),"E20",exeDataFileName)
+  	writeExeData(collectExeData(0.4,span=0),"E40",exeDataFileName)
+  	writeExeData(collectExeData(0.6,span=0),"E60",exeDataFileName)
+  	writeExeData(collectExeData(0.8,span=0),"E80",exeDataFileName)
+  	writeExeData(collectExeData(1,span=0),"MaxWR",exeDataFileName)
+
 	} else {
+
+      # If hasExeData is set to false, just run collectBPdata with out exe data functions
 		  bpOutput2 <-sapply(bpOutput,collectBPdata,span,hasExeData=FALSE,simplify=FALSE,USE.NAMES=TRUE)
 	}
 
 
 	# Write segmented data into a csv file
-	setwd(breakpointDataFolder)
-		writeBPdata(bpOutput,bpOutput2,outputFileName)
-	setwd("..")
+  bpFileName <- file.path(workingDir,breakpointDataFolder,outputFileName)
+	writeBPdata(bpOutput,bpOutput2,bpFileName)
 
 
 	# Figures #
 
+	tiffoutput <- function(VarName){
+	    fileName <- file.path(workingDir,segmentedFiguresFolder,paste(VarName,outputFileName,"Figure.tiff",sep=" "))
+		  tiff(fileName, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
+	}
+
 	# Plot figures - Used try statements as some data is known to be too
 	# noisy to all have breakpoints or successful
-	setwd(segmentedFiguresFolder)
 
-		tiffoutput <- function(VarName){
-  		  tiff(paste(VarName,outputFileName,"Figure.tiff",sep=" "), units = "px", width = 600, height = 600, res = NA, compression = "lzw")
-  		}
+	tiffoutput("HbR")
+	try({bpFigures(bpOutput$HbR,"Time (min)","[HbR] (uM)","PFC HbR")})
+	dev.off()
 
-  		tiffoutput("HbR")
-  		try({bpFigures(bpOutput$HbR,"Time (min)","[HbR] (uM)","PFC HbR")})
-  		dev.off()
+	tiffoutput("stO2")
+	try({bpFigures(bpOutput$stO2,"Time (min)","stO2 (uM)","PFC stO2")})
+	dev.off()
 
-  		tiffoutput("stO2")
-  		try({bpFigures(bpOutput$stO2,"Time (min)","stO2 (uM)","PFC stO2")})
-  		dev.off()
+	tiffoutput("HbO2")
+	try({bpFigures(bpOutput$HbO2,"Time (min)","HbO2 (uM)","PFC HbO2")})
+	dev.off()
 
-  		tiffoutput("HbO2")
-  		try({bpFigures(bpOutput$HbO2,"Time (min)","HbO2 (uM)","PFC HbO2")})
-  		dev.off()
+	tiffoutput("THb")
+	try({bpFigures(bpOutput$THb,"Time (min)","tHb (uM)","PFC THb")})
+	dev.off()
 
-  		tiffoutput("THb")
-  		try({bpFigures(bpOutput$THb,"Time (min)","tHb (uM)","PFC THb")})
-  		dev.off()
+	if(hasExeData){ # Output exercise data if present
+	  tiffoutput("VE")
+		try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
+	  dev.off()
 
-  		if(hasExeData){
-  			try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
-  			try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
-  			}
-
-	setwd("..")
+	  tiffoutput("PETCO2")
+		try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
+	  dev.off()
+	}
 
 
 	# Remove data for each study after output to tables and figures to prevent writing
