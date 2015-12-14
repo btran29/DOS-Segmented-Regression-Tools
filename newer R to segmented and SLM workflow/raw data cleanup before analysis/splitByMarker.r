@@ -7,22 +7,27 @@
 # E.g. splitByMarker("PFC|VL|Muscle|Brian",'batch files/study phase markers batch file.csv')
 # Function returns: none
 
+source('unequalBinMeans.r') # Includes uneqBinMeans
+
 splitByMarker <- function(keywords,batchFileDir,batchFile){
 
-	# Read table
-  setwd(batchFileDir)
-	table <- read.csv(batchFile, header=TRUE)
-  setwd("..")
+  # Get current working directory
+  workingDir <- getwd()
 
- # Locate all applicable files for threshold analysis
+  # Read table
+  table <- read.csv(file.path(workingDir,batchFileDir,batchFile),header=TRUE)
+
+  # Locate all applicable files for threshold analysis
   csv	<- dir(pattern="*.csv")
 
   # Locate optical data by keyword
   csvData	<- csv[grepl(keywords,csv)]
 
   # Folder output
-  dir.create("Data split by study phase")
-  dir.create("Data split by study phase - binned")
+  splitFolderName1 <- "Data split by study phase"
+  splitFolderName2 <- "Data split by study phase - binned"
+  dir.create(splitFolderName1)
+  dir.create(splitFolderName2)
 
   # Locate index of ea. study for each file
   for(file in 1:length(csvData)){
@@ -37,9 +42,9 @@ splitByMarker <- function(keywords,batchFileDir,batchFile){
     data <- read.csv(csv[file])
     indRampBeg	<-	which(data$Marker==rampBeg)[1] #First val only
     indRampEnd	<-	which(data$Marker==rampEnd)[1] # if duplicate
-    indPedBeg	<-	which(data$Marker==pedBeg)[1]
+    indPedBeg	  <-	which(data$Marker==pedBeg)[1]
     indRecovBeg	<-	which(data$Marker==recovBeg)[1]
-    indPedEnd	<-	which(data$Marker==pedEnd)[1]
+    indPedEnd	  <-	which(data$Marker==pedEnd)[1]
 
 
     # Rearrange columns to match previous 14-column format,
@@ -102,31 +107,67 @@ splitByMarker <- function(keywords,batchFileDir,batchFile){
     outputFileName	<- paste(gsub(".csv","",csvData[file]),"R",sep=" ")
 
 
-    # Output unbinned data
-    setwd("Data split by study phase")
-    write.table(allphases,paste(outputFileName," All Phases",".csv",sep=""),
-                append=FALSE,row.names=FALSE,sep=",")
-    write.table(baseline,paste(outputFileName," Baseline",".csv",sep=""),
-                append=FALSE,row.names=FALSE,sep=",")
-    write.table(ramp,paste(outputFileName," Ramp",".csv",sep=""),
-                append=FALSE,row.names=FALSE,sep=",")
-    write.table(recovery,paste(outputFileName," Recovery",".csv",sep=""),
-                append=FALSE,row.names=FALSE,sep=",")
-    setwd("..")
+    # Output unbinned data #
+
+    # Folder output
+    dir.create(file.path(workingDir,splitFolderName1,"All Phases"),showWarnings = FALSE)
+    dir.create(file.path(workingDir,splitFolderName1,"Baseline"),showWarnings = FALSE)
+    dir.create(file.path(workingDir,splitFolderName1,"Ramp"),showWarnings = FALSE)
+    dir.create(file.path(workingDir,splitFolderName1,"Recovery"),showWarnings = FALSE)
+
+    # Table output
 
 
-    # Output binned data
-    setwd("Data split by study phase - binned")
-    write.table(allphases.binned,paste(outputFileName," All Phases - Binned",
-                                       ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-    write.table(baseline.binned,paste(outputFileName," Baseline - Binned",
-                                      ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-    write.table(ramp.binned,paste(outputFileName," Ramp - Binned",
-                                	  ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-    write.table(recovery.binned,paste(outputFileName," Recovery - Binned",
-                                      ".csv",sep=""),append=FALSE,row.names=FALSE,sep=",")
-    setwd("..")
-  }
+    write.table(allphases,
+                file=file.path(workingDir,splitFolderName1,"All Phases",
+                               paste(outputFileName," All Phases",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+    write.table(baseline,
+                file=file.path(workingDir,splitFolderName1,"Baseline",
+                               paste(outputFileName," Baseline",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+    write.table(ramp,
+                file=file.path(workingDir,splitFolderName1,"Ramp",
+                               paste(outputFileName," Ramp",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+    write.table(recovery,
+                file=file.path(workingDir,splitFolderName1,"Recovery",
+                               paste(outputFileName," Recovery",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+
+    # Output binned data #
+
+    # Folder output
+    dir.create(file.path(workingDir,splitFolderName2,"All Phases"),showWarnings = FALSE)
+    dir.create(file.path(workingDir,splitFolderName2,"Baseline"),showWarnings = FALSE)
+    dir.create(file.path(workingDir,splitFolderName2,"Ramp"),showWarnings = FALSE)
+    dir.create(file.path(workingDir,splitFolderName2,"Recovery"),showWarnings = FALSE)
+
+    # Table output
+    write.table(allphases.binned,
+                file=file.path(workingDir,splitFolderName2,"All Phases",
+                               paste(outputFileName," All Phases",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+    write.table(baseline.binned,
+                file=file.path(workingDir,splitFolderName2,"Baseline",
+                               paste(outputFileName," Baseline",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+    write.table(ramp.binned,
+                file=file.path(workingDir,splitFolderName2,"Ramp",
+                                            paste(outputFileName," Ramp",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+
+    write.table(recovery.binned,
+                file=file.path(workingDir,splitFolderName2,"Recovery",
+                               paste(outputFileName," Recovery",".csv",sep="")),
+                append=FALSE,row.names=FALSE,sep=",")
+  } # end iterate over each file
 
 
 }
@@ -134,7 +175,7 @@ splitByMarker <- function(keywords,batchFileDir,batchFile){
 # Testing code #
 test <- FALSE
 if(test){
-# Should ouput 8 csv files with listed names, include studies with stated
-# keywords, and have fewer rows in the binned versions (check bins)
-splitByMarker("PFC|VL|Muscle|Brain",'batch files','study phase markers batch file.csv')
+  # Should ouput 8 csv files with listed names, include studies with stated
+  # keywords, and have fewer rows in the binned versions (check bins)
+  splitByMarker("PFC|VL|Muscle|Brain",'batch files','study phase markers batch file.csv')
 }
