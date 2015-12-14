@@ -4,7 +4,7 @@
 
 # Input
 hasExeData = FALSE
-keyWords = "Brain"  # e.g. "PFC|VL|Muscle|Brain"
+keyWords = "PFC"  # e.g. "PFC|VL|Muscle|Brain"
 seg.it = 10
 
 
@@ -39,7 +39,7 @@ dosStudies	<- csv[grep(keyWords,csv)]
 
 
 # Obtain study-specific breakpoint guess inputs for segmented function
-table <- read.csv(file.path(workingDir,"segmentedBatchFile.csv"))
+table <- read.csv(file.path(workingDir,"batch files","segmentedBatchFile.csv"))
 
 
 # Loop for each optical data file
@@ -70,17 +70,24 @@ for(study in 1:length(dosStudies)){
 
 
 	# Assign DOS or EXE-specific time axes, normalizing DOS to begin at 0
-	Time     <- dosData$time
+	Time     <- dosData$ElapsTime
 	normTime <- Time-min(Time)
 
 	if(hasExeData){
 	exeTime  <- exeData$time
 	}
 
+
+	# Clean up column names
+	headers <- colnames(dosData)
+	headers <- gsub("^Hb$", "HbR", headers) # Replace "Hb" header with "HbR"
+	headers <- gsub("^SO2$", "stO2", headers) # Replace "SO2" header with "stO2"
+	colnames(dosData) <- headers
+
 	# Make data frames from variables of interest
 		HbO2  <- data.frame(x=normTime, y=dosData$HbO2)
 		HbR   <- data.frame(x=normTime, y=dosData$HbR)
-		THb   <- data.frame(x=normTime, y=dosData$THb)
+		tHb   <- data.frame(x=normTime, y=dosData$tHb)
 		stO2  <- data.frame(x=normTime, y=dosData$stO2)
 
 		if(hasExeData){
@@ -104,7 +111,7 @@ for(study in 1:length(dosStudies)){
 	lin	<- list(
 	  "HbO2"  = lm.BO  <- lm(y~x,data=HbO2),
 	  "HbR"  = lm.BR  <- lm(y~x,data=HbR),
-	  "THb"  = lm.BT  <- lm(y~x,data=THb),
+	  "THb"  = lm.BT  <- lm(y~x,data=tHb),
 	  "stO2"  = lm.BS  <- lm(y~x,data=stO2)
 	)
 
@@ -197,7 +204,7 @@ for(study in 1:length(dosStudies)){
   		dev.off()
 
   		tiffoutput("THb")
-  		try({bpFigures(bpOutput$THb,"Time (min)","THb (uM)","PFC THb")})
+  		try({bpFigures(bpOutput$THb,"Time (min)","tHb (uM)","PFC THb")})
   		dev.off()
 
   		if(hasExeData){
