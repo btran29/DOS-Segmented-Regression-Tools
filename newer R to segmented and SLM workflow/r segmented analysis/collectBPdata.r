@@ -66,7 +66,7 @@ collectBPdata <- function(argv,span,hasExeData){
       }
     }
   })
-  
+
   # Collect information into a data frame
   confintData <- data.frame(# Segmented variables of interest
     bpEstX,bpEstY,lConf,uConf,confDiff,
@@ -114,13 +114,10 @@ collectBPdata <- function(argv,span,hasExeData){
 # Function to write BP data into tables with output filenames
 writeBPdata <- function(bpOutput,bpOutput2,outputFileName){
 	for(ibpOutput in 1:length(bpOutput2)){
-	  write.table(paste(names(bpOutput)[ibpOutput]),
-				  paste(outputFileName,"BPData.csv",sep=" "), sep=",", append=TRUE,
-				  row.names=FALSE)
-				  
-	  write.table(bpOutput2[ibpOutput],
-				  paste(outputFileName,"BPData.csv",sep=" "), sep=",", append=TRUE,
-				  row.names=FALSE)
+	  fileName <- paste(outputFileName,paste(names(bpOutput)[ibpOutput]),"BP.csv",sep=" ")
+	  write.csv(bpOutput2[ibpOutput],
+    				  file=fileName,
+    				  row.names=FALSE)
 	}
 }
 
@@ -141,7 +138,7 @@ bpFigures <- function(variable,xAxisLabel,yAxisLabel,title){
 	  abline(v =variable$psi[iLine,2] , untf = FALSE, lty=2)
 	}
 }
-		
+
 # Test code #
 test <- FALSE
 if(test){
