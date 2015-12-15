@@ -111,16 +111,6 @@ collectBPdata <- function(argv,span,hasExeData){
   } # end hasExeData conditional
 }
 
-# Function to write BP data into tables with output filenames
-writeBPdata <- function(bpOutput,bpOutput2,outputFileName){
-	for(ibpOutput in 1:length(bpOutput2)){
-	  fileName <- paste(outputFileName,paste(names(bpOutput)[ibpOutput]),"BP.csv",sep=" ")
-	  write.csv(bpOutput2[ibpOutput],
-    				  file=fileName,
-    				  row.names=FALSE)
-	}
-}
-
 # Function to plot all breakpoints and stylize figures
 bpFigures <- function(variable,xAxisLabel,yAxisLabel,title){
 	# Variable data over a 12 minute time axis

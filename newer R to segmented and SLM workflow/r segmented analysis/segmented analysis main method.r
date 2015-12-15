@@ -40,20 +40,24 @@ dosStudies	<- csv[grep(keyWords,csv)]
 table <- read.csv(file.path(workingDir,"batch files","segmentedBatchFile.csv"))
 
 
-# Create directories
+# Create subdirectories
 dir.create(percentExerciseDataFolder, showWarnings=FALSE)
 dir.create(breakpointDataFolder, showWarnings=FALSE)
 dir.create(segmentedFiguresFolder,showWarnings=FALSE)
-dir.create(file.path(workingDir,segmentedFiguresFolder,"HbR"),showWarnings = FALSE)
-dir.create(file.path(workingDir,segmentedFiguresFolder,"stO2"),showWarnings = FALSE)
-dir.create(file.path(workingDir,segmentedFiguresFolder,"HbO2"),showWarnings = FALSE)
-dir.create(file.path(workingDir,segmentedFiguresFolder,"THb"),showWarnings = FALSE)
-dir.create(file.path(workingDir,segmentedFiguresFolder,"VE"),showWarnings = FALSE)
-dir.create(file.path(workingDir,segmentedFiguresFolder,"PETCO2"),showWarnings = FALSE)
 
 
+# Make a subdirectory for each variable, for both figures and BP data
+varList <- c("HbR","stO2","HbO2","THb","VE","PETCO2")
+createSubDirs <- function(vars,subfolder){
+  for(var in 1:length(vars)){
+    dir.create(file.path(workingDir,subfolder,vars[var]),showWarnings=FALSE)
+  }
+}
+createSubDirs(varList,breakpointDataFolder)
+createSubDirs(varList,segmentedFiguresFolder)
 
-# Loop for each optical data file
+
+# Loop for each optical data file #
 for(study in 1:length(dosStudies)){
 
 
@@ -189,8 +193,21 @@ for(study in 1:length(dosStudies)){
 
 
 	# Write segmented data into a csv file
-  bpFileName <- file.path(workingDir,breakpointDataFolder,outputFileName)
-	writeBPdata(bpOutput,bpOutput2,bpFileName)
+	writeBPdata <- function(label,data){
+	  bpFileName <- file.path(workingDir,breakpointDataFolder,label,outputFileName)
+	  bpFileName <- paste(bpFileName," ",label," BP.csv",sep="")
+	  write.csv(data,file=bpFileName,row.names=FALSE)
+	}
+
+	writeBPdata("HbR",bpOutput2$HbR)
+	writeBPdata("stO2",bpOutput2$stO2)
+	writeBPdata("HbO2",bpOutput2$HbO2)
+	writeBPdata("THb",bpOutput2$THb)
+
+	if(hasExeData){ # write exercise data if present
+	  writeBPdata("VE",bpOutput2$VE)
+	  writeBPdata("PC",bpOutput2$PC)
+	}
 
 
 	# Figures #
