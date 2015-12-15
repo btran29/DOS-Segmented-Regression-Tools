@@ -6,7 +6,7 @@
 hasExeData = FALSE
 keyWords = "bins"  # e.g. "PFC|VL|Muscle|Brain"
 seg.it = 10
-
+scriptHome = "C:\Users\Brian\Documents\GitHub\DOSI-SLM-SegmentedOut\newer R to segmented and SLM workflow\r segmented analysis"
 
 # Load required packages
 library(segmented)
@@ -14,10 +14,10 @@ library(segmented)
 
 # Source functions for piecewise-linear regression analysis of DOS data
 # Assumes scripts are in the working directory. Manually source if need be
-source('exeEquivCSV.r') # Includes exeEquivCSV
-source('dosSegmented.r') # Includes DOSI.segmented, linearize
-source('collectBPdata.r') # Includes collectBPdata, bpFigures
-source('collectExeData.r') # Includes collectExeData, writeExeData
+source(file.path(scriptHome,'exeEquivCSV.r')) # Includes exeEquivCSV
+source(file.path(scriptHome,'dosSegmented.r')) # Includes DOSI.segmented, linearize
+source(file.path(scriptHome,'collectBPdata.r')) # Includes collectBPdata, bpFigures
+source(file.path(scriptHome,'collectExeData.r')) # Includes collectExeData, writeExeData
 
 
 # Organizing output into folders via labels (use for later output)
@@ -97,7 +97,7 @@ if(preBreakPoint){
 	BO_R   <- data.frame(x=normTime, y=dosData$BO_R)
 	BO_L  <- data.frame(x=normTime, y=dosData$BO_L)
 	BT_L <- data.frame(x=normTime, y=dosData$BT_L)
-	BT_L <- data.frame(x=normTime, y=dosData$BT_L)
+	BT_R <- data.frame(x=normTime, y=dosData$BT_R)
 
 	if(hasExeData){
 
@@ -116,13 +116,6 @@ if(preBreakPoint){
 
 	# Convert data to linear models (without any transformations),
 	# using a dos or exe-specific time axis
-# 	lin	<- list(
-# 	  "BR_R"  = lm.BO  <- lm(y~x,data=BR_R),
-# 	  "BR_L"  = lm.BR  <- lm(y~x,data=BR_L),
-# 	  "BO_R"  = lm.BT  <- lm(y~x,data=BO_R),
-# 	  "BO_L"  = lm.BS  <- lm(y~x,data=BO_L)
-# 	)
-
 	lin <- list(
 	  "BR_L"  = lm.BR  <- lm(y~x,data=BR_L),
 	  "BR_R"  = lm.BO  <- lm(y~x,data=BR_R)
@@ -200,7 +193,7 @@ if(postBreakPoint){
 
 	writeBPdata("BR_L",bpOutput2$BR_L)
 # 	writeBPdata("BO_L",bpOutput2$BO_L)
-# 	writeBPdata("BR_R",bpOutput2$BR_R)
+ 	writeBPdata("BR_R",bpOutput2$BR_R)
 # 	writeBPdata("BO_R",bpOutput2$BO_R)
 #
 # 	if(hasExeData){ # write exercise data if present
@@ -227,9 +220,9 @@ if(postBreakPoint){
 # 	try({bpFigures(bpOutput$BO_L,"Time (min)","BO_L (uM)","PFC BO_L")})
 # 	dev.off()
 #
-# 	tiffoutput("BR_R")
-# 	try({bpFigures(bpOutput$BR_R,"Time (min)","BR_R (uM)","PFC BR_R")})
-# 	dev.off()
+ 	tiffoutput("BR_R")
+ 	try({bpFigures(bpOutput$BR_R,"Time (min)","BR_R (uM)","PFC BR_R")})
+ 	dev.off()
 #
 # 	tiffoutput("BO_R")
 # 	try({bpFigures(bpOutput$BO_R,"Time (min)","BO_R (uM)","PFC BO_R")})
