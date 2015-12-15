@@ -16,7 +16,7 @@ library(segmented)
 # Assumes scripts are in the working directory. Manually source if need be
 source('exeEquivCSV.r') # Includes exeEquivCSV
 source('dosSegmented.r') # Includes DOSI.segmented, linearize
-source('collectBPdata.r') # Includes collectBPdata, writeBPData, bpFigures
+source('collectBPdata.r') # Includes collectBPdata, bpFigures
 source('collectExeData.r') # Includes collectExeData, writeExeData
 
 
@@ -60,7 +60,8 @@ createSubDirs(varList,segmentedFiguresFolder)
 # Loop for each optical data file #
 for(study in 1:length(dosStudies)){
 
-
+  preBreakPoint = TRUE
+if(preBreakPoint){
 	# Filename for output
 	outputFileName	<- gsub(".csv", "", dosStudies[study])
 
@@ -123,11 +124,15 @@ for(study in 1:length(dosStudies)){
 
 	# Conver data to linear models (without any transformations),
 	# using a dos or exe-specific time axis
-	lin	<- list(
-	  "HbO2"  = lm.BO  <- lm(y~x,data=HbO2),
-	  "HbR"  = lm.BR  <- lm(y~x,data=HbR),
-	  "THb"  = lm.BT  <- lm(y~x,data=tHb),
-	  "stO2"  = lm.BS  <- lm(y~x,data=stO2)
+# 	lin	<- list(
+# 	  "HbO2"  = lm.BO  <- lm(y~x,data=HbO2),
+# 	  "HbR"  = lm.BR  <- lm(y~x,data=HbR),
+# 	  "THb"  = lm.BT  <- lm(y~x,data=tHb),
+# 	  "stO2"  = lm.BS  <- lm(y~x,data=stO2)
+# 	)
+
+	lin <- list(
+	  "HbR"  = lm.BR  <- lm(y~x,data=HbR)
 	)
 
 	if(hasExeData){
@@ -153,18 +158,19 @@ for(study in 1:length(dosStudies)){
 
 	# Run segmented #
 
-	# Obtain breakpoints input for segmented function
+	# Obtain breakpoints input for segmented function - just HbR for now
 	segmentedMethod	<- table$SpecifSegmentedBPs[study]
 	segmentedBP1	<- table$FirstGuess[study]
 	segmentedBP2	<- table$SecondGuess[study]
-
+}
 
 	# Run segmented
 	bpOutput	<- sapply(lin,DOSI.segmented,
 				segmentedMethod,segmentedBP1,segmentedBP2,
 				simplify=FALSE,USE.NAMES=TRUE)
 
-
+postBreakPoint = TRUE
+if(postBreakPoint){
 	# Compare BP data with exe data
 	if(hasExeData){
 
@@ -200,14 +206,14 @@ for(study in 1:length(dosStudies)){
 	}
 
 	writeBPdata("HbR",bpOutput2$HbR)
-	writeBPdata("stO2",bpOutput2$stO2)
-	writeBPdata("HbO2",bpOutput2$HbO2)
-	writeBPdata("THb",bpOutput2$THb)
-
-	if(hasExeData){ # write exercise data if present
-	  writeBPdata("VE",bpOutput2$VE)
-	  writeBPdata("PC",bpOutput2$PC)
-	}
+# 	writeBPdata("stO2",bpOutput2$stO2)
+# 	writeBPdata("HbO2",bpOutput2$HbO2)
+# 	writeBPdata("THb",bpOutput2$THb)
+#
+# 	if(hasExeData){ # write exercise data if present
+# 	  writeBPdata("VE",bpOutput2$VE)
+# 	  writeBPdata("PC",bpOutput2$PC)
+# 	}
 
 
 	# Figures #
@@ -223,28 +229,28 @@ for(study in 1:length(dosStudies)){
 	tiffoutput("HbR")
 	try({bpFigures(bpOutput$HbR,"Time (min)","[HbR] (uM)","PFC HbR")})
 	dev.off()
-
-	tiffoutput("stO2")
-	try({bpFigures(bpOutput$stO2,"Time (min)","stO2 (uM)","PFC stO2")})
-	dev.off()
-
-	tiffoutput("HbO2")
-	try({bpFigures(bpOutput$HbO2,"Time (min)","HbO2 (uM)","PFC HbO2")})
-	dev.off()
-
-	tiffoutput("THb")
-	try({bpFigures(bpOutput$THb,"Time (min)","tHb (uM)","PFC THb")})
-	dev.off()
-
-	if(hasExeData){ # Output exercise data if present
-	  tiffoutput("VE")
-		try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
-	  dev.off()
-
-	  tiffoutput("PETCO2")
-		try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
-	  dev.off()
-	}
+}
+# 	tiffoutput("stO2")
+# 	try({bpFigures(bpOutput$stO2,"Time (min)","stO2 (uM)","PFC stO2")})
+# 	dev.off()
+#
+# 	tiffoutput("HbO2")
+# 	try({bpFigures(bpOutput$HbO2,"Time (min)","HbO2 (uM)","PFC HbO2")})
+# 	dev.off()
+#
+# 	tiffoutput("THb")
+# 	try({bpFigures(bpOutput$THb,"Time (min)","tHb (uM)","PFC THb")})
+# 	dev.off()
+#
+# 	if(hasExeData){ # Output exercise data if present
+# 	  tiffoutput("VE")
+# 		try({bpFigures(bpOutput$VE,"Time (min)","VE (L/min)","VE")})
+# 	  dev.off()
+#
+# 	  tiffoutput("PETCO2")
+# 		try({bpFigures(bpOutput$PC,"Time (min)","PETCO2 mmHg","PETCO2")})
+# 	  dev.off()
+# 	}
 
 
 	# Remove data for each study after output to tables and figures to prevent writing
