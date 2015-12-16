@@ -200,7 +200,7 @@ if(postBreakPoint){
 
 	writeBPdata("BR_L",bpOutput2$BR_L)
 # 	writeBPdata("BO_L",bpOutput2$BO_L)
-# 	writeBPdata("BR_R",bpOutput2$BR_R)
+	writeBPdata("BR_R",bpOutput2$BR_R)
 # 	writeBPdata("BO_R",bpOutput2$BO_R)
 #
 # 	if(hasExeData){ # write exercise data if present
@@ -227,10 +227,10 @@ if(postBreakPoint){
 # 	try({bpFigures(bpOutput$BO_L,"Time (min)","BO_L (uM)","PFC BO_L")})
 # 	dev.off()
 #
-# 	tiffoutput("BR_R")
-# 	try({bpFigures(bpOutput$BR_R,"Time (min)","BR_R (uM)","PFC BR_R")})
-# 	dev.off()
-#
+	tiffoutput("BR_R")
+	try({bpFigures(bpOutput$BR_R,"Time (min)","BR_R (uM)","PFC BR_R")})
+	dev.off()
+
 # 	tiffoutput("BO_R")
 # 	try({bpFigures(bpOutput$BO_R,"Time (min)","BO_R (uM)","PFC BO_R")})
 # 	dev.off()
