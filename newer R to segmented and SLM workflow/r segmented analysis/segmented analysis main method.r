@@ -6,7 +6,7 @@
 hasExeData = FALSE
 keyWords = "PFC"  # e.g. "PFC|VL|Muscle|Brain"
 seg.it = 10
-
+scriptHome = "C:\Users\Brian\Documents\GitHub\DOSI-SLM-SegmentedOut\newer R to segmented and SLM workflow\r segmented analysis"
 
 # Load required packages
 library(segmented)
@@ -14,10 +14,10 @@ library(segmented)
 
 # Source functions for piecewise-linear regression analysis of DOS data
 # Assumes scripts are in the working directory. Manually source if need be
-source('exeEquivCSV.r') # Includes exeEquivCSV
-source('dosSegmented.r') # Includes DOSI.segmented, linearize
-source('collectBPdata.r') # Includes collectBPdata, bpFigures
-source('collectExeData.r') # Includes collectExeData, writeExeData
+source(file.path(scriptHome,'exeEquivCSV.r')) # Includes exeEquivCSV
+source(file.path(scriptHome,'dosSegmented.r')) # Includes DOSI.segmented, linearize
+source(file.path(scriptHome,'collectBPdata.r')) # Includes collectBPdata, bpFigures
+source(file.path(scriptHome,'collectExeData.r')) # Includes collectExeData, writeExeData
 
 
 # Organizing output into folders via labels (use for later output)
