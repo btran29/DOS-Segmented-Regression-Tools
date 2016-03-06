@@ -148,6 +148,7 @@ inputrampstarts = rampeventmarkerinput.data.Sheet1(1:end,1);
 postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
 
+% 10-second bins pre/post ramp start %
 % Loop over all files of interest (within filetype) in the directory
 for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
     % Select variable column of interest, transpose
@@ -214,6 +215,10 @@ if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
     disp(iFilesOfInterest)
     break
 end
+
+% 3 minute bins %
+
+
 %% Output to excel workbook
 
 % Write cell array to an excel workbook file 
