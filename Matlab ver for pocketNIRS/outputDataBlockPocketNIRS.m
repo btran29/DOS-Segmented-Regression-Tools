@@ -53,7 +53,7 @@ inputmetadata = {
     keyword{1},label,col,bininterval,datestr(now,0)};
 
 % Filename of output xslx
-outputFileName = strcat('all subjects ',keyword{1},' ',label,'.xlsx');
+outputFileName = strcat('',keyword{1},'_',label);
 
 % Select last 12 samples
 last2min = false; % true or false, case sensitive
@@ -208,24 +208,37 @@ end % end file loop
 
 % Clean up cell array by removing empty rows
 postrampdatablock(all(cellfun(@isempty,postrampdatablock),2), : ) = [];
+prerampdatablock(all(cellfun(@isempty,prerampdatablock),2), : ) = [];
 
-if (size(postrampdatablock,1) == 0)
+if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
     disp(iFilesOfInterest)
     break
 end
 %% Output to excel workbook
 
 % Write cell array to an excel workbook file 
-xlswrite(outputFileName,postrampdatablock,1,'A1');
-xlswrite(outputFileName,inputmetadata,2,'A1');
+
+% Post ramp start data
+postrampstartoutputfilename = [outputFileName,'_rampstart','.xlsx'];
+xlswrite(postrampstartoutputfilename,postrampdatablock,1,'A1');
+xlswrite(postrampstartoutputfilename,inputmetadata,2,'A1');
+
+% Pre ramp start data
+prerampstatoutputfilename = [outputFileName,'_prerampstart','.xlsx'];
+xlswrite(prerampstatoutputfilename,prerampdatablock,1,'A1');
+xlswrite(prerampstatoutputfilename,inputmetadata,2,'A1');
 
 % Label workbook sheets
-e = actxserver('Excel.Application'); 
-    ewb = e.Workbooks.Open([pwd '\' outputFileName]);
-    ewb.Worksheets.Item(1).Name = 'Data';
-    ewb.Worksheets.Item(2).Name = 'Inputs & Metadata';
-    ewb.Save
-    ewb.Close(false);
-    e.Quit
-
+outputfilename = {postrampstartoutputfilename,prerampstatoutputfilename};
+for ioutputfilename = 1:2
+%     currentoutputfilename = outputfilename(ioutputfilename);
+%  
+%     e = actxserver('Excel.Application'); 
+%     ewb = e.Workbooks.Open([pwd '\' currentoutputfilename]);
+%     ewb.Worksheets.Item(1).Name = 'Data';
+%     ewb.Worksheets.Item(2).Name = 'Metadata';
+%     ewb.Save
+%     ewb.Close(false);
+%     e.Quit
+end
  disp('Done!')
