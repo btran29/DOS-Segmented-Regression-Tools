@@ -29,17 +29,23 @@ keyword = {'Marshall'};
 
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
-label = 'CH1_delta_oxy-Hb_(au)';
+label = 'CH1_delta_oxyHb_(au)';
 
 % Column of data to select
 col = 7; 
-% column 7 = CH1_?[oxy-Hb](a.u.)
-% column 8 = CH1_?[deoxy-Hb](a.u.)	
-% column 9 = CH1_?[total-Hb](a.u.)
+% Channel 1
+    % column 7 = CH1_delta_oxyHb_(au)
+    % column 8 = CH1_delta_deoxyHb_(au)	
+    % column 9 = CH1_delta_totalHb_(au)
+% Channel 2
+    % column 16 = CH2_delta_oxyHb_(au)
+    % column 17 = CH2_delta_deoxyHb_(au)	
+    % column 18 = CH2_delta_totalHb_(au)    
+
 
 % Binning interval
 bininterval = 10;
-
+    
 % Metadata list
 inputmetadata = {
     'Keyword Used','Workbook Label','Column Used',...
@@ -113,7 +119,7 @@ headers = {'filename','exeStart'};
 inputfilename = 'RampEventMarkers.xlsx';
 xlswrite(inputfilename,headers,2,'A1');
 xlswrite(inputfilename,inputlistarray,2,'A2');
-fprintf('\nGenerated input workbook in current directory.\n')
+fprintf('\nGenerated input workbook in current directory.')
 fprintf('\nNOTE: New data is in the 2nd sheet to prevent overwriting.\n')
 
 
@@ -210,7 +216,7 @@ end
 %% Output to excel workbook
 
 % Write cell array to an excel workbook file 
-xlswrite(outputFileName,postrampdatablock,1,'A2');
+xlswrite(outputFileName,postrampdatablock,1,'A1');
 xlswrite(outputFileName,inputmetadata,2,'A1');
 
 % Label workbook sheets
@@ -221,3 +227,5 @@ e = actxserver('Excel.Application');
     ewb.Save
     ewb.Close(false);
     e.Quit
+
+ disp('Done!')

@@ -37,10 +37,14 @@ col = 7;
 % column 8 = CH1_?[deoxy-Hb](a.u.)	
 % column 9 = CH1_?[total-Hb](a.u.)
 
+% Binning interval
+bininterval = 10;
+    
 % Metadata list
 inputmetadata = {
-    'Keyword Used','Workbook Label','Column Used','Date Generated';...
-    keyword,label,col,datestr(now,0)};
+    'Keyword Used','Workbook Label','Column Used',...
+    'Bin Interval','Date Generated';...
+    keyword{1},label,col,bininterval,datestr(now,0)};
 
 % Filename of output xslx
 outputFileName = strcat('all subjects ',keyword{1},' ',label,'.xlsx');
@@ -163,18 +167,18 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         % interval where:
         % [ binMeans ] = unequalsizedbins( interval,data,time )
         postrampstartBinMeans = unequalsizedbins(...
-            10,postrampstartdata,postrampstarttime);
+            bininterval,postrampstartdata,postrampstarttime);
 
         % Flip pre ramp start data and bin
         prerampstartdata_flipped = fliplr(prerampstartdata);
         prerampstartBinMeans = unequalsizedbins(...
-            10,prerampstartdata_flipped,prerampstarttime);
+            bininterval,prerampstartdata_flipped,prerampstarttime);
 
         % Generate pre ramp start time axis
         prerampstarttimeaxis = ...
-            -factor*length(prerampstartBinMeans):...
-            factor:...
-            factor*length(postrampstartBinMeans);    
+            -bininterval*length(prerampstartBinMeans):...
+            bininterval:...
+            bininterval*length(postrampstartBinMeans);    
 
     catch DataOrEventErr
         warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
@@ -184,14 +188,14 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
 % Enter post ramp data into cell array shifted 1 col for study label
 postrampdatablock(iFilesOfInterest,1) = cellstr(...
     fileType(iFilesOfInterest).name);
-postrampdatablock(iFilesOfInterest,2:(size(postrampstartBinMeans,2)+1)) = ...
+postrampdatablock(iFilesOfInterest,2:(size(postrampstartBinMeans,1)+1)) = ...
     transpose(num2cell(postrampstartBinMeans));
 
 % Enter pre ramp data into cell array shifted 1 col for study label
 prerampdatablock(iFilesOfInterest,1) = cellstr(...
     fileType(iFilesOfInterest).name);
-prerampdatablock(iFilesOfInterest,2:(size(prerampstartBinMeans,2)+1)) = ...
-    num2cell(prerampstartBinMeans);
+prerampdatablock(iFilesOfInterest,2:(size(prerampstartBinMeans,1)+1)) = ...
+    transpose(num2cell(prerampstartBinMeans));
 
 
 end % end file loop
