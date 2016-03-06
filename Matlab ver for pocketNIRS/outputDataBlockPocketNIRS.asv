@@ -37,8 +37,13 @@ col = 7;
 % column 8 = CH1_?[deoxy-Hb](a.u.)	
 % column 9 = CH1_?[total-Hb](a.u.)
 
+% Metadata list
+inputmetadata = {
+    'Keyword Used','Workbook Label','Column Used','Date Generated';...
+    keyword,label,col,datestr(now,0)};
+
 % Filename of output xslx
-outputFileName = strcat('collected ',keyword{1},' ',label,'.xlsx');
+outputFileName = strcat('all subjects ',keyword{1},' ',label,'.xlsx');
 
 % Select last 12 samples
 last2min = false; % true or false, case sensitive
@@ -85,55 +90,130 @@ end
 
 %% Generate user input list for locating beginning ramp markers
 
+% Generate file list array
+filelist = fileType(idxFilesOfInterest);
+filelist = struct2cell(filelist);
+filelist = transpose(filelist(1,:));
+
+% Generate default marker array
+markerlist = cell(length(filelist),1);
+markerlist(:,1) = {2}; % beginning ramp by default is 2
+
+% Combine arrays
+inputlistarray = horzcat(filelist,markerlist);
+
+% Generate headers
+headers = {'filename','exeStart'};
+
+% Output to an easily editable workbook + notify in console
+inputfilename = 'RampEventMarkers.xlsx';
+xlswrite(inputfilename,headers,2,'A1');
+xlswrite(inputfilename,inputlistarray,2,'A2');
+fprintf('\nGenerated input workbook in current directory.\n')
+fprintf('\nNOTE: New data is in the 2nd sheet to prevent overwriting.\n')
+
+
+%% Require user input prior to continuing
+prompt = '\nHave the markers been located and entered into the input\n workbook? Press enter to continue. \n';
+x = input(prompt);
+
+
+%% Load input marker workbook
+rampeventmarkerinput = importdata('RampEventMarkers.xlsx');
+inputfilelist = rampeventmarkerinput.textdata.Sheet1(2:end,1);
+
+% Catch mismatches between event markers and current files of interest
+if (isequal(inputfilelist,filelist)==0)
+    warning('Mismatch between input and current selected files of interest')
+    break
+end
+
+% Collect ramp start data
+inputrampstarts = rampeventmarkerinput.data.Sheet1(1:end,1);
+
 
 %% Collect data from all files of interest 
 
 % Initialize a cell array of interest +1 for study label
-datablock = cell(size(idxFilesOfInterest,1),numData+1);
-% TODO: fix data block assignment, numData =! binMeans
+postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
+prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
 
 % Loop over all files of interest (within filetype) in the directory
-for iFilesOfInterest = 1:length(fileType)
+for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
     % Select variable column of interest, transpose
-    if idxFilesOfInterest(iFilesOfInterest)
-        try
-            % Import data
-            importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
-            data = importedFile.data(:,col); % col references ignore cnt/dateTime
-            time = importedFile.data(:,1); % fixed % column 1
-            events = importedFile.data(:,2); % fixed @ column 2
-            
-            % Locate ramp and bin from there
-            find even
-            % Binning procedure %
-            binMeans = unequalsizedbins(10,data,time);
-                       
-            % Transpose bin means
-            binMeans = transpose(binMeans);
-    
-	
-            % Select last 120 seconds for baseline data %
-            if last2min
-                if size(data,2)>=12 %#ok<UNRCH> % manually set true/false
-                    data = data((end-11):end); 
-                end
-            end
-            
-            
-        catch
-            warning('Missing data - %s',fileType(iFilesOfInterest).name)
-            continue
-        end
-    % Enter study data into cell array shifted 1 col for study label
-    datablock(iFilesOfInterest,1) = cellstr(...
-        fileType(iFilesOfInterest).name);
-    datablock(iFilesOfInterest,2:(size(binMeans,2)+1)) = num2cell(binMeans);
-    
-    end % end file-of-interest conditional
+    try
+        % Import data
+        importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
+        data = importedFile.data(:,col); % col references ignore cnt/dateTime
+        time = importedFile.data(:,1); % fixed % column 1
+        events = importedFile.data(:,2); % fixed @ column 2
+
+        % Locate beginning of ramp and bin from ramp as the central
+        % point
+        % Use input marker data
+        idxrampstart = find(events == inputrampstarts(iFilesOfInterest));
+
+        postrampstartdata = data(idxrampstart:end);
+        postrampstarttime = time(idxrampstart:end);
+        prerampstartdata  = data(1:idxrampstart);
+        prerampstarttime  = time(1:idxrampstart);
+
+        % Bin post ramp start data
+        % UNEQUALSIZEDBINS Custom function to make bins over an
+        % interval where:
+        % [ binMeans ] = unequalsizedbins( interval,data,time )
+        postrampstartBinMeans = unequalsizedbins(...
+            10,postrampstartdata,postrampstarttime);
+
+        % Flip pre ramp start data and bin
+        prerampstartdata_flipped = fliplr(prerampstartdata);
+        prerampstartBinMeans = unequalsizedbins(...
+            10,prerampstartdata_flipped,prerampstarttime);
+
+        % Generate pre ramp start time axis
+        prerampstarttimeaxis = ...
+            -factor*length(prerampstartBinMeans):...
+            factor:...
+            factor*length(postrampstartBinMeans);    
+
+    catch DataOrEventErr
+        warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
+        break
+    end
+
+% Enter post ramp data into cell array shifted 1 col for study label
+postrampdatablock(iFilesOfInterest,1) = cellstr(...
+    fileType(iFilesOfInterest).name);
+postrampdatablock(iFilesOfInterest,2:(size(postrampstartBinMeans,2)+1)) = ...
+    transpose(num2cell(postrampstartBinMeans));
+
+% Enter pre ramp data into cell array shifted 1 col for study label
+prerampdatablock(iFilesOfInterest,1) = cellstr(...
+    fileType(iFilesOfInterest).name);
+prerampdatablock(iFilesOfInterest,2:(size(prerampstartBinMeans,2)+1)) = ...
+    num2cell(prerampstartBinMeans);
+
+
 end % end file loop
 
 % Clean up cell array by removing empty rows
-datablock(all(cellfun(@isempty,datablock),2), : ) = [];
+postrampdatablock(all(cellfun(@isempty,postrampdatablock),2), : ) = [];
 
-%% Write cell array to an excel workbook file 
-xlswrite(outputFileName,datablock,1,'A2');
+if (size(postrampdatablock,1) == 0)
+    disp(iFilesOfInterest)
+    break
+end
+%% Output to excel workbook
+
+% Write cell array to an excel workbook file 
+xlswrite(outputFileName,postrampdatablock,1,'A2');
+xlswrite(outputFileName,inputmetadata,2,'A1');
+
+% Label workbook sheets
+e = actxserver('Excel.Application'); 
+    ewb = e.Workbooks.Open([pwd '\' outputFileName]);
+    ewb.Worksheets.Item(1).Name = 'Data';
+    ewb.Worksheets.Item(2).Name = 'Inputs & Metadata';
+    ewb.Save
+    ewb.Close(false);
+    e.Quit
