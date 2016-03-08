@@ -181,11 +181,6 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         prerampstartBinMeans = unequalsizedbins(...
             bininterval,prerampstartdata_flipped,prerampstarttime);
 
-        % Generate pre ramp start time axis
-        prerampstarttimeaxis = ...
-            -bininterval*length(prerampstartBinMeans):...
-            bininterval:...
-            bininterval*length(postrampstartBinMeans);    
 
     catch DataOrEventErr
         warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
@@ -218,6 +213,75 @@ end
 
 % 3 minute bins %
 
+%% Output to figures folder
+
+% Get current directory if not already present
+if exist(currentdir,'var') == 0
+    pwd = currentdir; 
+end
+
+% Create new figures folder if not already present
+binneddataplotsfolder = 'Plots - Binned data';
+if exist(...
+        [currentdir '\' binneddataplotsfolder],...
+        'dir') == 0
+    mkdir(binneddataplotsfolder)
+end
+
+% Output binned data % 
+
+% Check if bin means are equally sized and a label is present
+if size(postrampstartBinMeans,1) == size(prerampstartBinMeans,1) &&...
+        exist(label,'var') == 1
+    % Output preliminary figures in data block
+    for iProcessedFile = 1:size(postrampstartBinMeans,1)
+        
+        % Generate pre ramp start time axis
+        prerampstarttimeaxis = ...
+            -bininterval*length(prerampstartBinMeans):...
+            bininterval:...
+            -bininterval;  
+        
+        % Generate post ramp start time axis
+        postrampstarttimeaxis = ...
+            0:bininterval:bininterval*length(postrampstartBinMeans);
+        
+        % Combine pre/posst ramp time axes
+        processedtimeaxis = horzcat(...
+            prerampstarttimeaxis,postrampstarttimeaxis);
+        
+        % Combine pre/post ramp data blocks
+        currentprocesseddata = horzcat(...
+            prerampdatablock(iProcessedFile,2:end-1),...
+            postrampdatablock(iProcessedFile,2:end));
+            % Select one data point less in prerampdatablock
+            % to remove overlapping 0 second time point
+        
+        % Grab label from first cell
+        currentfilename = postrampdatablock(iProcessedFile,1);
+        
+        %TODO: CORRECT THIS CODE
+        % Make figure
+        figure;
+        set(gcf,'Visible','off', 'Color', 'w');
+        [hAx,~,~] = plotyy(...
+            processedtimeaxis,currentprocesseddata);
+        title(sprintf('%s',strrep(fileName,'_',' ')))
+        xlabel('Time (seconds)');
+        ylabel(hAx(1),label);
+
+        % Manually set marker ticks for easier visualization
+        maxTick  = max(VariableData.Raw.markers);
+        numTicks = numel(find(VariableData.Raw.markers));
+        markerTicks = linspace(1,maxTick,numTicks);
+        set(hAx(2),'YTick',markerTicks);
+
+        % Save into new folder
+        cd([currDir '\' binneddataplotsfolder])
+        export_fig(sprintf('%s',fileName),'-png','-m2');
+        cd([currDir '\Data in Matlab m format'])
+    end
+end
 
 %% Output to excel workbook
 

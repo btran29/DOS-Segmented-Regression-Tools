@@ -23,7 +23,7 @@ function [TimeSec,Work,VO2,VO2kg,VCO2,RQ,VEBTPS,RR,HT,RestLevel] = importMetabol
 %% Initialize variables.
 if nargin<=2
     startRow = 8;
-    endRow = inf;
+    endRow   = inf;
 end
 
 %% Read columns of data as strings:
@@ -102,14 +102,14 @@ rawNumericColumns(J,:) = [];
 rawCellColumns(J,:) = [];
 
 %% Allocate imported array to column variable names
-TimeSec = rawCellColumns(:, 1);
-Work = cell2mat(rawNumericColumns(:, 1));
-VO2 = cell2mat(rawNumericColumns(:, 2));
-VO2kg = cell2mat(rawNumericColumns(:, 3));
-VCO2 = cell2mat(rawNumericColumns(:, 4));
-RQ = cell2mat(rawNumericColumns(:, 5));
-VEBTPS = cell2mat(rawNumericColumns(:, 6));
-RR = cell2mat(rawNumericColumns(:, 7));
-HT = rawCellColumns(:, 2);
+TimeSec   = rawCellColumns(:, 1);
+Work      = cell2mat(rawNumericColumns(:, 1));
+VO2       = cell2mat(rawNumericColumns(:, 2));
+VO2kg     = cell2mat(rawNumericColumns(:, 3));
+VCO2      = cell2mat(rawNumericColumns(:, 4));
+RQ        = cell2mat(rawNumericColumns(:, 5));
+VEBTPS    = cell2mat(rawNumericColumns(:, 6));
+RR        = cell2mat(rawNumericColumns(:, 7));
+HT        = rawCellColumns(:, 2);
 RestLevel = rawCellColumns(:, 3);
 
