@@ -332,20 +332,35 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         exist('label','var') == 1
     % Output preliminary figures in data block
     for iProcessedFile = 1:size(postrampdatablock,1)
-        % TODO: Adjust max length to individual study
+        
+        % Get length of study (not including label)%
+        
+        % Pre ramp start
+        currentprerowlength = find(...
+            ~cellfun('isempty',...
+            prerampdatablock(iProcessedFile,:)),1,'last')-1;
+        % Post ramp start
+        currentpostrowlength = find(...
+            ~cellfun('isempty',...
+            postrampdatablock(iProcessedFile,:)),1,'last')-1;
+        
+        % Generate axis % 
+        
         % Generate pre ramp start time axis
         prerampstarttimeaxis = ...
-            -bininterval*(maxlengthprerampdatablock-1):...
+            -bininterval*(currentprerowlength-1):...
             bininterval:...
             -bininterval;  
         
         % Generate post ramp start time axis
         postrampstarttimeaxis = ...
-            0:bininterval:bininterval*maxlengthpostrampdatablock;
+            0:bininterval:bininterval*currentpostrowlength;
         
         % Combine pre/posst ramp time axes
-        processedtimeaxis = horzcat(...
+        currentcombinedtimeaxis = horzcat(...
             prerampstarttimeaxis,postrampstarttimeaxis);
+        
+        % Combine pre/post data %
         
         % Combine pre/post ramp data blocks
         currentprocesseddata = cell2mat(horzcat(...
@@ -357,15 +372,15 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         % Grab label from first cell
         currentfilename = postrampdatablock{iProcessedFile,1};
         
-        % Make figure
+        % Make figure %
         figure;
         hold on
         set(gcf,'Visible','off', 'Color', 'w');
         plot(...
-            processedtimeaxis,currentprocesseddata);
+            currentcombinedtimeaxis,currentprocesseddata);
         title(sprintf('%s',strrep(currentfilename,'_',' ')))
         xlabel('Time (seconds)');
-        ylabel(label);
+        ylabel(strrep(label,'_',' '));
         hold off
 
         % Save into new folder
