@@ -206,7 +206,7 @@ prerampdatablock(iFilesOfInterest,2:(size(prerampstartBinMeans,1)+1)) = ...
 end % end file loop
 
 
-% Locate maximum length of time-axis by locating longest testing session % 
+% Locate maximum study length of time-axis by locating longest testing session % 
 
 % Post ramp start
 for iRow = 1:size(postrampdatablock,1)
@@ -253,7 +253,7 @@ rightjustifiedprerampdatablock = prerampdatablock;
 for iRow = 1:size(prerampdatablock,1)
     % Circularly shift row to match longest study
     currentRowLength = find(...
-        ~cellfun('isempty',prerampdatablock(iRow,:)),1,'last');
+        ~cellfun('isempty',prerampdatablock(iRow,2:end)),1,'last');
     rightjustifiedprerampdatablock(iRow,2:end) = circshift(...
         rightjustifiedprerampdatablock(iRow,2:end),...
         [0 (maxlengthprerampdatablock-currentRowLength)]);
@@ -265,38 +265,42 @@ end
     % Combination includes: 
     % 1) 'Right justified' pre ramp start data blcok
     % 2) post ramp start data block
+   
+% Generate time axis % 
 
-    % Generate time axis % 
-        
-    % Generate pre ramp start time axis
-    prerampstarttimeaxis = ...
-        -bininterval*(maxlengthprerampdatablock-1):...
-        bininterval:...
-        -bininterval;  
+% Generate pre ramp start time axis
+prerampstarttimeaxis = ...
+    -bininterval*(maxlengthprerampdatablock-1):...
+    bininterval:...
+    -bininterval;  
 
-    % Generate post ramp start time axis
-    postrampstarttimeaxis = ...
-        0:bininterval:bininterval*maxlengthpostrampdatablock;
+% Generate post ramp start time axis
+postrampstarttimeaxis = ...
+    0:bininterval:bininterval*maxlengthpostrampdatablock;
 
-    % Combine pre/post ramp time axes
-    currentcombinedtimeaxis = horzcat(...
-        prerampstarttimeaxis,postrampstarttimeaxis);
+% Combine pre/post ramp time axes
+currentcombinedtimeaxis = horzcat(...
+    prerampstarttimeaxis,postrampstarttimeaxis);
 
-    % Combine pre/post data %
+% Combine pre/post data %
 
-    % Combine pre/post ramp data blocks
-    currentprocesseddata = cell2mat(horzcat(...
-        prerampdatablock(iProcessedFile,2:end-1),...
-        postrampdatablock(iProcessedFile,2:end)));
-        % Select one data point less in prerampdatablock
-        % to remove overlapping 0 second time point
-        
-    % Combine data and time axis
-    combineddatablock = cell(...
-        size(currentprocesseddata,1)+1,...
-        size(currentprocesseddata,2));
-    combineddatablock(2:end,:) = currentprocesseddata;
-    combineddatablock(1,2:end) = currentedcombinedtimeaxis;
+% Combine pre/post ramp data blocks
+currentprocesseddata = horzcat(...
+    rightjustifiedprerampdatablock(:,2:end),...
+    postrampdatablock(:,2:end));
+% Remove empty columns
+currentprocesseddata(...
+    :,all(cellfun(@isempty,currentprocesseddata),1)) = [];
+
+
+% Combine data and time axis
+combineddatablock = cell(...
+    size(currentprocesseddata,1)+1,...
+    size(currentprocesseddata,2)+1);
+combineddatablock(1,1) = {'Time(sec)'};
+combineddatablock(2:end,1) = prerampdatablock(:,1);
+combineddatablock(2:end,2:end) = currentprocesseddata;
+combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
     
         
 % 3 minute bins %
@@ -446,37 +450,23 @@ end
 
 % CD to Summary workbook folder
 cd([currentdir '\' summaryworkbookfolder])
-% Post ramp start data
-
-postrampstartoutputfilename = [outputFileName,'_rampstart','.xlsx'];
-xlswrite(postrampstartoutputfilename,postrampdatablock,1,'A1');
-xlswrite(postrampstartoutputfilename,inputmetadata,2,'A1');
-
-e = actxserver('Excel.Application'); 
-    ewb = e.Workbooks.Open([pwd '\' postrampstartoutputfilename]);
-    ewb.Worksheets.Item(1).Name = 'Data';
-    ewb.Worksheets.Item(2).Name = 'Metadata';
-    ewb.Save
-    ewb.Close(false);
-    e.Quit
-    
-% Pre ramp start data
-prerampstatoutputfilename = [outputFileName,'_prerampstart','.xlsx'];
-xlswrite(prerampstatoutputfilename,rightjustifiedprerampdatablock,1,'A1');
-xlswrite(prerampstatoutputfilename,prerampdatablock,2,'A1');
-xlswrite(prerampstatoutputfilename,inputmetadata,3,'A1');
-
-e = actxserver('Excel.Application'); 
-    ewb = e.Workbooks.Open([pwd '\' prerampstatoutputfilename]);
-    ewb.Worksheets.Item(1).Name = 'For copy & paste';
-    ewb.Worksheets.Item(2).Name = 'For automated analysis';
-    ewb.Worksheets.Item(3).Name = 'Metadata';
-    ewb.Save
-    ewb.Close(false);
-    e.Quit
 
 % Combined summary workbook
-    
+outputworkbookfilename = [outputFileName '.xlsx'];
+xlswrite(outputworkbookfilename,combineddatablock,1,'A1');
+xlswrite(outputworkbookfilename,prerampdatablock,2,'A1');
+xlswrite(outputworkbookfilename,postrampdatablock,3,'A1');
+xlswrite(outputworkbookfilename,inputmetadata,4,'A1');
+e = actxserver('Excel.Application'); 
+    ewb = e.Workbooks.Open([pwd '\' outputworkbookfilename]);
+    ewb.Worksheets.Item(1).Name = 'For copy & paste';
+    ewb.Worksheets.Item(2).Name = 'Pre-ramp-start data';
+    ewb.Worksheets.Item(3).Name = 'Post-ramp-start data';
+    ewb.Worksheets.Item(4).Name = 'Metadata';
+    ewb.Save
+    ewb.Close(false);
+    e.Quit
+
 % Switch to working directory
 cd(currentdir)
 
