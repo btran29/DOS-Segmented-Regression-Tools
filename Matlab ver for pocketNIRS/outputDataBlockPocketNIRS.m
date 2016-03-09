@@ -58,6 +58,9 @@ outputFileName = strcat('',keyword{1},'_',label);
 % Select last 12 samples
 last2min = false; % true or false, case sensitive
 
+% Ouput Unbinned CSV format with ramp start adjusted time
+nirs2rampstartcsv = false;
+
 % Max number of data points per study for variable of interest
 numData = 500; % Some arbitrarily large value
 
@@ -139,7 +142,7 @@ if (isequal(inputfilelist,filelist)==0)
 end
 
 % Collect ramp start data
-inputrampstarts = rampeventmarkerinput.data.Sheet1(1:end,1);
+inputrampstarteventmarkers = rampeventmarkerinput.data.Sheet1(1:end,1);
 
 
 %% Collect data from all files of interest 
@@ -162,7 +165,7 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         % Locate beginning of ramp and bin from ramp as the central
         % point
         % Use input marker data
-        idxrampstart = find(events == inputrampstarts(iFilesOfInterest));
+        idxrampstart = find(events == inputrampstarteventmarkers(iFilesOfInterest));
 
         postrampstartdata = data(idxrampstart:end);
         postrampstarttime = time(idxrampstart:end);
@@ -211,16 +214,52 @@ if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
     break
 end
 
+% Locate maximum length of time-axis
+for iRow = 1:size(postrampdatablock,1)
+    % TODO:
+    % DETERMINE MAX LENGTH OF NONEMPTY VALUE TO SCALE TIME AXIS
+    % http://stackoverflow.com/questions/26532296/how-to-find-index-of-the-last-non-empty-element-in-a-cell-array
+    %
+    % maxlengthpostrampdatablock = 
+end
+
+% TODO: USING MAX LENGTH OF NONEMPTY VALUE
+    % DETERMINE HOW MUCH TO SHIFT PRERAMP DATA ROWS SO LAST NONEMPTY CELL 
+    % MATCHES THE SAME COLUMN INDEX OF THE LONGEST TESTING SESSION (right
+    % justifying the table)
+    
 % 3 minute bins %
+
+if nirs2rampstartcsv
+    % Output Data - Unbinned CSV format with ramp start adjusted time
+    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) %#ok<UNRCH> % manually selected
+        pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
+
+        % Locate ramp start using selected event marker.
+        idxrampstart = pocketnirslog.Event==inputrampstarteventmarkers(iFilesOfInterest);
+
+        % Add in adjusted time column
+        pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
+
+        % Export to csv file
+        filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
+            label, '.csv'];
+        export(pocketnirslog,'file',filename,'Delimiter',',')
+    end
+end
 
 %% Output to figures folder
 
 % Get current directory if not already present
-if exist(currentdir,'var') == 0
-    pwd = currentdir; 
+if exist('currentdir','var') == 0
+    currentdir = pwd; 
 end
 
-% Create new figures folder if not already present
+% Output binned
+
+% Output binned data %
+
+% Create new binned figures folder if not already present
 binneddataplotsfolder = 'Plots - Binned data';
 if exist(...
         [currentdir '\' binneddataplotsfolder],...
@@ -228,23 +267,21 @@ if exist(...
     mkdir(binneddataplotsfolder)
 end
 
-% Output binned data % 
-
 % Check if bin means are equally sized and a label is present
-if size(postrampstartBinMeans,1) == size(prerampstartBinMeans,1) &&...
-        exist(label,'var') == 1
+if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
+        exist('label','var') == 1
     % Output preliminary figures in data block
-    for iProcessedFile = 1:size(postrampstartBinMeans,1)
+    for iProcessedFile = 1:size(postrampdatablock,1)
         
         % Generate pre ramp start time axis
         prerampstarttimeaxis = ...
-            -bininterval*length(prerampstartBinMeans):...
+            -bininterval*(size(prerampdatablock,2)-1):...
             bininterval:...
             -bininterval;  
         
         % Generate post ramp start time axis
         postrampstarttimeaxis = ...
-            0:bininterval:bininterval*length(postrampstartBinMeans);
+            0:bininterval:bininterval*(size(postrampdatablock,2)-1);
         
         % Combine pre/posst ramp time axes
         processedtimeaxis = horzcat(...
@@ -258,32 +295,27 @@ if size(postrampstartBinMeans,1) == size(prerampstartBinMeans,1) &&...
             % to remove overlapping 0 second time point
         
         % Grab label from first cell
-        currentfilename = postrampdatablock(iProcessedFile,1);
+        currentfilename = postrampdatablock{iProcessedFile,1};
         
-        %TODO: CORRECT THIS CODE
         % Make figure
         figure;
+        hold on
         set(gcf,'Visible','off', 'Color', 'w');
-        [hAx,~,~] = plotyy(...
+        plot(...
             processedtimeaxis,currentprocesseddata);
-        title(sprintf('%s',strrep(fileName,'_',' ')))
+        title(sprintf('%s',strrep(currentfilename,'_',' ')))
         xlabel('Time (seconds)');
-        ylabel(hAx(1),label);
-
-        % Manually set marker ticks for easier visualization
-        maxTick  = max(VariableData.Raw.markers);
-        numTicks = numel(find(VariableData.Raw.markers));
-        markerTicks = linspace(1,maxTick,numTicks);
-        set(hAx(2),'YTick',markerTicks);
+        ylabel(label);
+        hold off
 
         % Save into new folder
-        cd([currDir '\' binneddataplotsfolder])
-        export_fig(sprintf('%s',fileName),'-png','-m2');
-        cd([currDir '\Data in Matlab m format'])
+        cd([currentdir '\' binneddataplotsfolder])
+        export_fig(sprintf('%s',currentfilename),'-png','-m2');
+        cd(currentdir)
     end
 end
 
-%% Output to excel workbook
+%% Output to excel workbooks
 
 % Write cell array to an excel workbook file 
 
