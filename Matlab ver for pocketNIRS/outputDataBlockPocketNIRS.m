@@ -42,7 +42,6 @@ col = 7;
     % column 17 = CH2_delta_deoxyHb_(au)	
     % column 18 = CH2_delta_totalHb_(au)    
 
-
 % Binning interval
 bininterval = 10;
     
@@ -54,9 +53,6 @@ inputmetadata = {
 
 % Filename of output xslx
 outputFileName = strcat('',keyword{1},'_',label);
-
-% Select last 12 samples
-last2min = false; % true or false, case sensitive
 
 % Ouput Unbinned CSV format with ramp start adjusted time
 nirs2rampstartcsv = false;
@@ -230,6 +226,7 @@ for iRow = 1:size(postrampdatablock,1)
         end
     end
 end
+maxlengthpostrampdatablock = maxlengthpostrampdatablock-1; % remove label
 
 % Pre ramp start
 for iRow = 1:size(prerampdatablock,1)
@@ -249,8 +246,9 @@ for iRow = 1:size(prerampdatablock,1)
         end
     end
 end
+maxlengthprerampdatablock = maxlengthprerampdatablock -1; % remove label
 
-% 'Right justified' pre ramp start
+% 'Right justified' pre ramp start data block %
 rightjustifiedprerampdatablock = prerampdatablock;
 for iRow = 1:size(prerampdatablock,1)
     % Circularly shift row to match longest study
@@ -261,44 +259,49 @@ for iRow = 1:size(prerampdatablock,1)
         [0 (maxlengthprerampdatablock-currentRowLength)]);
 end
 
+% Combined data block with time axis scale % 
+    % '-1' for pre-ramp refers to removing the ramp-start bin from
+    % consideration
+    % Combination includes: 
+    % 1) 'Right justified' pre ramp start data blcok
+    % 2) post ramp start data block
 
+    % Generate time axis % 
+        
+    % Generate pre ramp start time axis
+    prerampstarttimeaxis = ...
+        -bininterval*(maxlengthprerampdatablock-1):...
+        bininterval:...
+        -bininterval;  
+
+    % Generate post ramp start time axis
+    postrampstarttimeaxis = ...
+        0:bininterval:bininterval*maxlengthpostrampdatablock;
+
+    % Combine pre/post ramp time axes
+    currentcombinedtimeaxis = horzcat(...
+        prerampstarttimeaxis,postrampstarttimeaxis);
+
+    % Combine pre/post data %
+
+    % Combine pre/post ramp data blocks
+    currentprocesseddata = cell2mat(horzcat(...
+        prerampdatablock(iProcessedFile,2:end-1),...
+        postrampdatablock(iProcessedFile,2:end)));
+        % Select one data point less in prerampdatablock
+        % to remove overlapping 0 second time point
+        
+    % Combine data and time axis
+    combineddatablock = cell(...
+        size(currentprocesseddata,1)+1,...
+        size(currentprocesseddata,2));
+    combineddatablock(2:end,:) = currentprocesseddata;
+    combineddatablock(1,2:end) = currentedcombinedtimeaxis;
+    
+        
 % 3 minute bins %
 
 
-% Output Data - Unbinned CSV format with ramp start adjusted time  %
-
-if nirs2rampstartcsv % manually set to to true or false in script input
-    % Get current directory if not already present
-    if exist('currentdir','var') == 0 %#ok<UNRCH>
-        currentdir = pwd; 
-    end
-
-    % Create new binned figures folder if not already present
-    unbinnedrampadjtimefolder = 'Data - unbinned with ramp adjusted time';
-    if exist(...
-            [currentdir '\' unbinnedrampadjtimefolder],...
-            'dir') == 0
-        mkdir(unbinnedrampadjtimefolder)
-    end
-
-    % Process will take ~1 min for each file
-    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) 
-        pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
-
-        % Locate ramp start using selected event marker.
-        idxrampstart = pocketnirslog.Event==inputrampstarteventmarkers(iFilesOfInterest);
-
-        % Add in adjusted time column
-        pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
-
-        % Export to csv file in new folder
-        filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
-            label, '.csv'];
-        cd([currentdir '\' unbinnedrampadjtimefolder])
-        export(pocketnirslog,'file',filename,'Delimiter',',')
-        cd(currentdir)
-    end
-end
 
 %% Output figures for visual confirmation
 
@@ -388,7 +391,7 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         postrampstarttimeaxis = ...
             0:bininterval:bininterval*currentpostrowlength;
         
-        % Combine pre/posst ramp time axes
+        % Combine pre/post ramp time axes
         currentcombinedtimeaxis = horzcat(...
             prerampstarttimeaxis,postrampstarttimeaxis);
         
@@ -422,7 +425,9 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
     end
 end
 
-%% Output to excel workbooks
+%% Output spreadsheets
+
+% Data - Binned Summary excel workbook format %
 
 % Get current directory if not already present
 if exist('currentdir','var') == 0
@@ -448,7 +453,7 @@ xlswrite(postrampstartoutputfilename,postrampdatablock,1,'A1');
 xlswrite(postrampstartoutputfilename,inputmetadata,2,'A1');
 
 e = actxserver('Excel.Application'); 
-    ewb = e.Workbooks.Open([pwd '\' prerampstatoutputfilename]);
+    ewb = e.Workbooks.Open([pwd '\' postrampstartoutputfilename]);
     ewb.Worksheets.Item(1).Name = 'Data';
     ewb.Worksheets.Item(2).Name = 'Metadata';
     ewb.Save
@@ -469,9 +474,47 @@ e = actxserver('Excel.Application');
     ewb.Save
     ewb.Close(false);
     e.Quit
+
+% Combined summary workbook
     
 % Switch to working directory
 cd(currentdir)
+
+
+% Output Data - Unbinned CSV format with ramp start adjusted time  %
+
+if nirs2rampstartcsv % manually set to to true or false in script input
+    % Get current directory if not already present
+    if exist('currentdir','var') == 0 %#ok<UNRCH>
+        currentdir = pwd; 
+    end
+
+    % Create new binned figures folder if not already present
+    unbinnedrampadjtimefolder = 'Data - unbinned with ramp adjusted time';
+    if exist(...
+            [currentdir '\' unbinnedrampadjtimefolder],...
+            'dir') == 0
+        mkdir(unbinnedrampadjtimefolder)
+    end
+
+    % Process will take ~1 min for each file
+    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) 
+        pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
+
+        % Locate ramp start using selected event marker.
+        idxrampstart = pocketnirslog.Event==inputrampstarteventmarkers(iFilesOfInterest);
+
+        % Add in adjusted time column
+        pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
+
+        % Export to csv file in new folder
+        filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
+            label, '.csv'];
+        cd([currentdir '\' unbinnedrampadjtimefolder])
+        export(pocketnirslog,'file',filename,'Delimiter',',')
+        cd(currentdir)
+    end
+end
 
 % Finished message
  disp('Done!')
