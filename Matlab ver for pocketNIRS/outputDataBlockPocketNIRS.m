@@ -307,7 +307,15 @@ if exist('currentdir','var') == 0
     currentdir = pwd; 
 end
 
-% Output binned
+% Output unbinned data %
+
+% Create new unbinned figures folder if not already present
+unbinneddataplotsfolder = 'Plots - Raw data';
+if exist(...
+        [currentdir '\' unbinneddataplotsfolder],...
+        'dir') == 0
+    mkdir(unbinneddataplotsfolder)
+end
 
 % Output binned data %
 
@@ -324,25 +332,25 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         exist('label','var') == 1
     % Output preliminary figures in data block
     for iProcessedFile = 1:size(postrampdatablock,1)
-        
+        % TODO: Adjust max length to individual study
         % Generate pre ramp start time axis
         prerampstarttimeaxis = ...
-            -bininterval*(size(prerampdatablock,2)-1):...
+            -bininterval*(maxlengthprerampdatablock-1):...
             bininterval:...
             -bininterval;  
         
         % Generate post ramp start time axis
         postrampstarttimeaxis = ...
-            0:bininterval:bininterval*(size(postrampdatablock,2)-1);
+            0:bininterval:bininterval*maxlengthpostrampdatablock;
         
         % Combine pre/posst ramp time axes
         processedtimeaxis = horzcat(...
             prerampstarttimeaxis,postrampstarttimeaxis);
         
         % Combine pre/post ramp data blocks
-        currentprocesseddata = horzcat(...
+        currentprocesseddata = cell2mat(horzcat(...
             prerampdatablock(iProcessedFile,2:end-1),...
-            postrampdatablock(iProcessedFile,2:end));
+            postrampdatablock(iProcessedFile,2:end)));
             % Select one data point less in prerampdatablock
             % to remove overlapping 0 second time point
         
