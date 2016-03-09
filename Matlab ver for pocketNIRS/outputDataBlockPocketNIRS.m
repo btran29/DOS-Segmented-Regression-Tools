@@ -369,9 +369,25 @@ end
 
 %% Output to excel workbooks
 
+% Get current directory if not already present
+if exist('currentdir','var') == 0
+    currentdir = pwd; 
+end
+
+% Create new binned figures folder if not already present
+summaryworkbookfolder = 'Data - Binned Summary';
+if exist(...
+        [currentdir '\' summaryworkbookfolder],...
+        'dir') == 0
+    mkdir(summaryworkbookfolder)
+end
+
 % Write cell array to an excel workbook file 
 
+% CD to Summary workbook folder
+cd([currentdir '\' summaryworkbookfolder])
 % Post ramp start data
+
 postrampstartoutputfilename = [outputFileName,'_rampstart','.xlsx'];
 xlswrite(postrampstartoutputfilename,postrampdatablock,1,'A1');
 xlswrite(postrampstartoutputfilename,inputmetadata,2,'A1');
@@ -398,6 +414,9 @@ e = actxserver('Excel.Application');
     ewb.Save
     ewb.Close(false);
     e.Quit
+    
+% Switch to working directory
+cd(currentdir)
 
 % Finished message
  disp('Done!')
