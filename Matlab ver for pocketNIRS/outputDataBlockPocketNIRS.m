@@ -317,6 +317,38 @@ if exist(...
     mkdir(unbinneddataplotsfolder)
 end
 
+if exist('DataOrEventErr','var') == 0
+% If there are no previous data aquisition errors, output raw data figs
+    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
+        % Import data
+        importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
+        data = importedFile.data(:,col); % col references ignore cnt/dateTime
+        time = importedFile.data(:,1); % fixed % column 1
+        events = importedFile.data(:,2); % fixed @ column 2
+
+        currentfilename = fileType(iFilesOfInterest).name;
+
+        % Make figure
+        figure;
+        hold on
+        set(gcf,'Visible','off', 'Color', 'w');
+        [hAx,~,~] = plotyy(...
+            time,data,...
+            time,events);
+        title(sprintf('%s',strrep(currentfilename,'_',' ')))
+        xlabel('Time (seconds)');
+        ylabel(hAx(1),'HbR (delta A.U.)');
+        ylabel(hAx(2),'Marker');
+        hold off
+
+        % Save into new folder
+        cd([currentdir '\' unbinneddataplotsfolder])
+        export_fig(sprintf('%s',currentfilename),'-png','-m2');
+        cd(currentdir)
+    end
+end
+
+
 % Output binned data %
 
 % Create new binned figures folder if not already present
