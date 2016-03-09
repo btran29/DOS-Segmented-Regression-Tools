@@ -29,7 +29,7 @@ keyword = {'Marshall'};
 
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
-label = 'CH1_delta_oxyHb_(au)';
+label = 'CH1_delta_oxyHb';
 
 % Column of data to select
 col = 7; 
@@ -202,37 +202,87 @@ prerampdatablock(iFilesOfInterest,1) = cellstr(...
 prerampdatablock(iFilesOfInterest,2:(size(prerampstartBinMeans,1)+1)) = ...
     transpose(num2cell(prerampstartBinMeans));
 
-
+% Stop script if pre and post ramp start data blocks are not the same size
+    if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
+        disp(iFilesOfInterest)
+        break
+    end
 end % end file loop
 
-% Clean up cell array by removing empty rows
-postrampdatablock(all(cellfun(@isempty,postrampdatablock),2), : ) = [];
-prerampdatablock(all(cellfun(@isempty,prerampdatablock),2), : ) = [];
 
-if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
-    disp(iFilesOfInterest)
-    break
-end
+% Locate maximum length of time-axis by locating longest testing session % 
 
-% Locate maximum length of time-axis
+% Post ramp start
 for iRow = 1:size(postrampdatablock,1)
-    % TODO:
-    % DETERMINE MAX LENGTH OF NONEMPTY VALUE TO SCALE TIME AXIS
-    % http://stackoverflow.com/questions/26532296/how-to-find-index-of-the-last-non-empty-element-in-a-cell-array
-    %
-    % maxlengthpostrampdatablock = 
+    if exist('maxlengthpostrampdatablock','var') == 0
+        maxlengthpostrampdatablock = find(...
+            ~cellfun('isempty',postrampdatablock(iRow,:)),1,'last');
+    else
+        % Clear current row length
+        if exist('currentRowLength','var') == 1
+            clearvars currentRowLength
+        end
+        % Grab current row length and compare
+        currentRowLength = find(...
+            ~cellfun('isempty',postrampdatablock(iRow,:)),1,'last');
+        if currentRowLength > maxlengthpostrampdatablock
+            maxlengthpostrampdatablock = currentRowLength;
+        end
+    end
 end
 
-% TODO: USING MAX LENGTH OF NONEMPTY VALUE
-    % DETERMINE HOW MUCH TO SHIFT PRERAMP DATA ROWS SO LAST NONEMPTY CELL 
-    % MATCHES THE SAME COLUMN INDEX OF THE LONGEST TESTING SESSION (right
-    % justifying the table)
-    
+% Pre ramp start
+for iRow = 1:size(prerampdatablock,1)
+    if exist('maxlengthprerampdatablock','var') == 0
+        maxlengthprerampdatablock = find(...
+            ~cellfun('isempty',prerampdatablock(iRow,:)),1,'last');
+    else
+       % Clear current row length
+        if exist('currentRowLength','var') == 1
+            clearvars currentRowLength
+        end
+        % Grab current row length and compare
+        currentRowLength = find(...
+            ~cellfun('isempty',prerampdatablock(iRow,:)),1,'last');
+        if currentRowLength > maxlengthprerampdatablock
+            maxlengthprerampdatablock = currentRowLength;
+        end
+    end
+end
+
+% 'Right justified' pre ramp start
+rightjustifiedprerampdatablock = prerampdatablock;
+for iRow = 1:size(prerampdatablock,1)
+    % Circularly shift row to match longest study
+    currentRowLength = find(...
+        ~cellfun('isempty',prerampdatablock(iRow,:)),1,'last');
+    rightjustifiedprerampdatablock(iRow,2:end) = circshift(...
+        rightjustifiedprerampdatablock(iRow,2:end),...
+        [0 (maxlengthprerampdatablock-currentRowLength)]);
+end
+
+
 % 3 minute bins %
 
-if nirs2rampstartcsv
-    % Output Data - Unbinned CSV format with ramp start adjusted time
-    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) %#ok<UNRCH> % manually selected
+
+% Output Data - Unbinned CSV format with ramp start adjusted time  %
+
+if nirs2rampstartcsv % manually set to to true or false in script input
+    % Get current directory if not already present
+    if exist('currentdir','var') == 0 %#ok<UNRCH>
+        currentdir = pwd; 
+    end
+
+    % Create new binned figures folder if not already present
+    unbinnedrampadjtimefolder = 'Data - unbinned with ramp adjusted time';
+    if exist(...
+            [currentdir '\' unbinnedrampadjtimefolder],...
+            'dir') == 0
+        mkdir(unbinnedrampadjtimefolder)
+    end
+
+    % Process will take ~1 min for each file
+    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) 
         pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
 
         % Locate ramp start using selected event marker.
@@ -241,14 +291,16 @@ if nirs2rampstartcsv
         % Add in adjusted time column
         pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
 
-        % Export to csv file
+        % Export to csv file in new folder
         filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
             label, '.csv'];
+        cd([currentdir '\' unbinnedrampadjtimefolder])
         export(pocketnirslog,'file',filename,'Delimiter',',')
+        cd(currentdir)
     end
 end
 
-%% Output to figures folder
+%% Output figures for visual confirmation
 
 % Get current directory if not already present
 if exist('currentdir','var') == 0
@@ -324,22 +376,28 @@ postrampstartoutputfilename = [outputFileName,'_rampstart','.xlsx'];
 xlswrite(postrampstartoutputfilename,postrampdatablock,1,'A1');
 xlswrite(postrampstartoutputfilename,inputmetadata,2,'A1');
 
+e = actxserver('Excel.Application'); 
+    ewb = e.Workbooks.Open([pwd '\' prerampstatoutputfilename]);
+    ewb.Worksheets.Item(1).Name = 'Data';
+    ewb.Worksheets.Item(2).Name = 'Metadata';
+    ewb.Save
+    ewb.Close(false);
+    e.Quit
+    
 % Pre ramp start data
 prerampstatoutputfilename = [outputFileName,'_prerampstart','.xlsx'];
-xlswrite(prerampstatoutputfilename,prerampdatablock,1,'A1');
-xlswrite(prerampstatoutputfilename,inputmetadata,2,'A1');
+xlswrite(prerampstatoutputfilename,rightjustifiedprerampdatablock,1,'A1');
+xlswrite(prerampstatoutputfilename,prerampdatablock,2,'A1');
+xlswrite(prerampstatoutputfilename,inputmetadata,3,'A1');
 
-% Label workbook sheets
-outputfilename = {postrampstartoutputfilename,prerampstatoutputfilename};
-for ioutputfilename = 1:2
-%     currentoutputfilename = outputfilename(ioutputfilename);
-%  
-%     e = actxserver('Excel.Application'); 
-%     ewb = e.Workbooks.Open([pwd '\' currentoutputfilename]);
-%     ewb.Worksheets.Item(1).Name = 'Data';
-%     ewb.Worksheets.Item(2).Name = 'Metadata';
-%     ewb.Save
-%     ewb.Close(false);
-%     e.Quit
-end
+e = actxserver('Excel.Application'); 
+    ewb = e.Workbooks.Open([pwd '\' prerampstatoutputfilename]);
+    ewb.Worksheets.Item(1).Name = 'For copy & paste';
+    ewb.Worksheets.Item(2).Name = 'For automated analysis';
+    ewb.Worksheets.Item(3).Name = 'Metadata';
+    ewb.Save
+    ewb.Close(false);
+    e.Quit
+
+% Finished message
  disp('Done!')
