@@ -335,8 +335,20 @@ end
 threeminpostrampdatablock(...
     :,all(cellfun(@isempty,threeminpostrampdatablock),1)) = [];
 
-% Pre ramp start data block
-% maxlengthprerampdatablock = findMaxTestLength(prerampdatablock)-1; % remove label
+% Find max study length of three min time points post ramp start data block
+maxlengththreemindatablock = findMaxTestLength(threeminpostrampdatablock)-1; % remove label
+
+% Generate time axis scale
+threemindatablocktime = 0:180:180*maxlengththreemindatablock-1;
+
+% Combine data block with scale
+combinedthreemindatablock = cell(...
+    size(threeminpostrampdatablock,1)+1,...
+    (maxlengththreemindatablock+1));
+
+combineddatablock(1,1) = {'Time(sec)'};
+combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
+combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
 
 
