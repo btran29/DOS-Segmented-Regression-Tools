@@ -148,10 +148,10 @@ postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
 
 % 10-second bins pre/post ramp start %
-% Loop over all files of interest (within filetype) in the directory
 for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
-    % Select variable column of interest, transpose
+    % Loop over all files of interest (within filetype) in the directory
     try
+        % Select variable column of interest, transpose %
         % Import data
         importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
         data = importedFile.data(:,col); % col references ignore cnt/dateTime
@@ -186,20 +186,22 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         break
     end
 
-% Enter post ramp data into cell array shifted 1 col for study label
-postrampdatablock(iFilesOfInterest,1) = cellstr(...
-    fileType(iFilesOfInterest).name);
-postrampdatablock(iFilesOfInterest,2:(size(postrampstartBinMeans,1)+1)) = ...
+    % Enter post ramp data into cell array shifted 1 col for study label
+    postrampdatablock(iFilesOfInterest,1) = cellstr(...
+        fileType(iFilesOfInterest).name);
+    postrampdatablock(iFilesOfInterest,...
+        2:(size(postrampstartBinMeans,1)+1)) = ...
     transpose(num2cell(postrampstartBinMeans));
 
-% Enter pre ramp data into cell array shifted 1 col for study label
-prerampdatablock(iFilesOfInterest,1) = cellstr(...
-    fileType(iFilesOfInterest).name);
-prerampdatablock(iFilesOfInterest,2:(size(prerampstartBinMeans,1)+1)) = ...
-    transpose(num2cell(prerampstartBinMeans));
+    % Enter pre ramp data into cell array shifted 1 col for study label
+    prerampdatablock(iFilesOfInterest,1) = cellstr(...
+        fileType(iFilesOfInterest).name);
+    prerampdatablock(iFilesOfInterest,...
+        2:(size(prerampstartBinMeans,1)+1)) = ...
+        transpose(num2cell(prerampstartBinMeans));
 
-% Stop script if pre and post ramp start data blocks are not the same size
     if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
+    % Stop script if pre and post ramp start data blocks are not the same size
         disp(iFilesOfInterest)
         break
     end
@@ -208,45 +210,11 @@ end % end file loop
 
 % Locate maximum study length of time-axis by locating longest testing session % 
 
-% Post ramp start
-for iRow = 1:size(postrampdatablock,1)
-    if exist('maxlengthpostrampdatablock','var') == 0
-        maxlengthpostrampdatablock = find(...
-            ~cellfun('isempty',postrampdatablock(iRow,:)),1,'last');
-    else
-        % Clear current row length
-        if exist('currentRowLength','var') == 1
-            clearvars currentRowLength
-        end
-        % Grab current row length and compare
-        currentRowLength = find(...
-            ~cellfun('isempty',postrampdatablock(iRow,:)),1,'last');
-        if currentRowLength > maxlengthpostrampdatablock
-            maxlengthpostrampdatablock = currentRowLength;
-        end
-    end
-end
-maxlengthpostrampdatablock = maxlengthpostrampdatablock-1; % remove label
+% Post ramp start data block
+maxlengthpostrampdatablock = findMaxTestLength(postrampdatablock)-1; % remove label
+% Pre ramp start data block
+maxlengthprerampdatablock = findMaxTestLength(prerampdatablock)-1; % remove label
 
-% Pre ramp start
-for iRow = 1:size(prerampdatablock,1)
-    if exist('maxlengthprerampdatablock','var') == 0
-        maxlengthprerampdatablock = find(...
-            ~cellfun('isempty',prerampdatablock(iRow,:)),1,'last');
-    else
-       % Clear current row length
-        if exist('currentRowLength','var') == 1
-            clearvars currentRowLength
-        end
-        % Grab current row length and compare
-        currentRowLength = find(...
-            ~cellfun('isempty',prerampdatablock(iRow,:)),1,'last');
-        if currentRowLength > maxlengthprerampdatablock
-            maxlengthprerampdatablock = currentRowLength;
-        end
-    end
-end
-maxlengthprerampdatablock = maxlengthprerampdatablock -1; % remove label
 
 % 'Right justified' pre ramp start data block %
 rightjustifiedprerampdatablock = prerampdatablock;
@@ -303,7 +271,72 @@ combineddatablock(2:end,2:end) = currentprocesseddata;
 combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
     
         
-% 3 minute bins %
+% 3 minute -10 sec bins %
+% Each bin is -10 seconds from time point of interest
+% Time points of interest are 0 (ramp start), and every 180 sec after
+
+% Initialize a cell array of interest +1 for study label
+threeminpostrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
+
+for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
+% Loop over all files of interest (within filetype) in the directory
+
+    try % Select variable column of interest, transpose %
+        % Import data
+        importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
+        data = importedFile.data(:,col); % col references ignore cnt/dateTime
+        time = importedFile.data(:,1); % fixed % column 1
+        events = importedFile.data(:,2); % fixed @ column 2
+
+        % Locate beginning of ramp and bin from ramp as the central point
+        % Use input marker data
+        idxrampstart = find(events == inputrampstarteventmarkers(iFilesOfInterest));
+        
+        % Locate three minute intervals for individual session
+        currentadjustedtime = time - time(idxrampstart);
+        currentthreeminlocs = 0:180:currentadjustedtime(end);
+
+        % Initialize method variables
+        last10secBinMeans = NaN(length(currentthreeminlocs),1);
+
+        for ithreeminloc = 1:numel(currentthreeminlocs);
+        % For each three minute time-point
+
+            %Initialize/reset flags
+            flagForBin = false(length(currentadjustedtime),1);
+
+            % Flag data that fits into current interval (-10 seconds)
+            allIdx = 1:numel(currentadjustedtime);
+            idxBin = allIdx(...
+                currentadjustedtime >= (currentthreeminlocs(ithreeminloc)-10) &...
+                currentadjustedtime <= currentthreeminlocs(ithreeminloc));
+            flagForBin(idxBin) = true;
+
+            % Get bin mean
+            last10secBinMeans(ithreeminloc,1) = mean(data(flagForBin));
+        end
+
+        
+    catch DataOrEventErr
+        warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
+        break
+    end
+    
+    % Enter post ramp data into cell array shifted 1 col for study label
+    threeminpostrampdatablock(iFilesOfInterest,1) = cellstr(...
+        fileType(iFilesOfInterest).name);
+    threeminpostrampdatablock(iFilesOfInterest,...
+        2:(size(last10secBinMeans,1)+1)) = ...
+    transpose(num2cell(last10secBinMeans));
+
+end
+
+% Remove empty columns
+threeminpostrampdatablock(...
+    :,all(cellfun(@isempty,threeminpostrampdatablock),1)) = [];
+
+% Pre ramp start data block
+% maxlengthprerampdatablock = findMaxTestLength(prerampdatablock)-1; % remove label
 
 
 
@@ -344,7 +377,7 @@ if exist('DataOrEventErr','var') == 0
             time,events);
         title(sprintf('%s',strrep(currentfilename,'_',' ')))
         xlabel('Time (seconds)');
-        ylabel(hAx(1),'HbR (delta A.U.)');
+        ylabel(hAx(1),strrep(label,'_',' '));
         ylabel(hAx(2),'Marker');
         hold off
 
