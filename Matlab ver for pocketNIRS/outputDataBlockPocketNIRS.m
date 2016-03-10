@@ -1,4 +1,4 @@
-% Ver 3-2-16 Brian
+% Ver 3-9-16 Brian
 %% Output transposed block of a column of data from studies w/ keywords
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
