@@ -29,6 +29,7 @@ keyword = {'Marshall'};
 
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
+% Must not have spaces, and work as a windows folder name
 label = 'CH1_delta_oxyHb';
 
 % Column of data to select
@@ -49,7 +50,10 @@ bininterval = 10;
 inputmetadata = {
     'Keyword Used','Workbook Label','Column Used',...
     'Bin Interval','Date Generated';...
-    keyword{1},label,col,bininterval,datestr(now,0)};
+    keyword{1},label,col,bininterval,datestr(now,0);
+    'Binning method:', 'pre/post ramp = bin 10 sec raw data from ramp start',...
+    'three-minute interval = bin -10 sec raw data from each point',...
+    '',''};
 
 % Filename of output xslx
 outputFileName = strcat('',keyword{1},'_',label);
@@ -142,7 +146,7 @@ inputrampstarteventmarkers = rampeventmarkerinput.data.Sheet1(1:end,1);
 
 
 %% Collect data from all files of interest 
-
+disp('Binning data..\n')
 % Initialize a cell array of interest +1 for study label
 postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
@@ -346,14 +350,14 @@ combinedthreemindatablock = cell(...
     size(threeminpostrampdatablock,1)+1,...
     (maxlengththreemindatablock+1));
 
-combineddatablock(1,1) = {'Time(sec)'};
+combinedthreemindatablock(1,1) = {'Time(sec)'};
 combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
 combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
 
 
 %% Output figures for visual confirmation
-
+disp('Outputting figures..\n')
 % Get current directory if not already present
 if exist('currentdir','var') == 0
     currentdir = pwd; 
@@ -368,6 +372,16 @@ if exist(...
         'dir') == 0
     mkdir(unbinneddataplotsfolder)
 end
+
+% Create a new variables subfolder if not already present
+if exist(...
+        [currentdir '\' unbinneddataplotsfolder '\' label],...
+        'dir') == 0
+    cd([currentdir '\' unbinneddataplotsfolder])
+    mkdir(label)
+    cd(currentdir)
+end
+
 
 if exist('DataOrEventErr','var') == 0
 % If there are no previous data aquisition errors, output raw data figs
@@ -394,7 +408,7 @@ if exist('DataOrEventErr','var') == 0
         hold off
 
         % Save into new folder
-        cd([currentdir '\' unbinneddataplotsfolder])
+        cd([currentdir '\' unbinneddataplotsfolder '\' label])
         export_fig(sprintf('%s',currentfilename),'-png','-m2');
         cd(currentdir)
     end
@@ -409,6 +423,15 @@ if exist(...
         [currentdir '\' binneddataplotsfolder],...
         'dir') == 0
     mkdir(binneddataplotsfolder)
+end
+
+% Create a new variables subfolder if not already present
+if exist(...
+        [currentdir '\' binneddataplotsfolder '\' label],...
+        'dir') == 0
+    cd([currentdir '\' binneddataplotsfolder])
+    mkdir(label)
+    cd(currentdir)
 end
 
 % Check if bin means are equally sized and a label is present
@@ -468,14 +491,14 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         hold off
 
         % Save into new folder
-        cd([currentdir '\' binneddataplotsfolder])
+        cd([currentdir '\' binneddataplotsfolder '\' label])
         export_fig(sprintf('%s',currentfilename),'-png','-m2');
         cd(currentdir)
     end
 end
 
 %% Output spreadsheets
-
+disp('Outputting spreadsheets..\n')
 % Data - Binned Summary excel workbook format %
 
 % Get current directory if not already present
@@ -501,13 +524,15 @@ outputworkbookfilename = [outputFileName '.xlsx'];
 xlswrite(outputworkbookfilename,combineddatablock,1,'A1');
 xlswrite(outputworkbookfilename,prerampdatablock,2,'A1');
 xlswrite(outputworkbookfilename,postrampdatablock,3,'A1');
-xlswrite(outputworkbookfilename,inputmetadata,4,'A1');
+xlswrite(outputworkbookfilename,combinedthreemindatablock,4,'A1');
+xlswrite(outputworkbookfilename,inputmetadata,5,'A1');
 e = actxserver('Excel.Application'); 
     ewb = e.Workbooks.Open([pwd '\' outputworkbookfilename]);
     ewb.Worksheets.Item(1).Name = 'For copy & paste';
     ewb.Worksheets.Item(2).Name = 'Pre-ramp-start data';
     ewb.Worksheets.Item(3).Name = 'Post-ramp-start data';
-    ewb.Worksheets.Item(4).Name = 'Metadata';
+    ewb.Worksheets.Item(4).Name = 'Three Min Interval';
+    ewb.Worksheets.Item(5).Name = 'Metadata';
     ewb.Save
     ewb.Close(false);
     e.Quit
