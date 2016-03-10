@@ -25,15 +25,15 @@ clear all
 fileExtension = '*.PNI';
 
 % Keyword (e.g. study phase, subject IDs,)
-keyword = {'Marshall'};
+keyword = {'nirs'};
 
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
 % Must not have spaces, and work as a windows folder name
-label = 'CH1_delta_oxyHb';
+label = 'CH2_delta_totalHb';
 
 % Column of data to select
-col = 7; 
+col = 18; 
 % Channel 1
     % column 7 = CH1_delta_oxyHb_(au)
     % column 8 = CH1_delta_deoxyHb_(au)	
@@ -43,8 +43,8 @@ col = 7;
     % column 17 = CH2_delta_deoxyHb_(au)	
     % column 18 = CH2_delta_totalHb_(au)    
 
-% Binning interval
-bininterval = 10;
+% Binning interval, seconds
+bininterval = 10; 
     
 % Metadata list
 inputmetadata = {
@@ -146,7 +146,7 @@ inputrampstarteventmarkers = rampeventmarkerinput.data.Sheet1(1:end,1);
 
 
 %% Collect data from all files of interest 
-disp('Binning data..\n')
+disp('Binning data..')
 % Initialize a cell array of interest +1 for study label
 postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
@@ -357,7 +357,7 @@ combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
 
 %% Output figures for visual confirmation
-disp('Outputting figures..\n')
+disp('Outputting figures..')
 % Get current directory if not already present
 if exist('currentdir','var') == 0
     currentdir = pwd; 
@@ -498,7 +498,7 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
 end
 
 %% Output spreadsheets
-disp('Outputting spreadsheets..\n')
+disp('Outputting spreadsheets..')
 % Data - Binned Summary excel workbook format %
 
 % Get current directory if not already present
@@ -544,6 +544,7 @@ cd(currentdir)
 % Output Data - Unbinned CSV format with ramp start adjusted time  %
 
 if nirs2rampstartcsv % manually set to to true or false in script input
+    disp('Outputting unbinned ramp adjusted time CSVs..')
     % Get current directory if not already present
     if exist('currentdir','var') == 0 %#ok<UNRCH>
         currentdir = pwd; 
