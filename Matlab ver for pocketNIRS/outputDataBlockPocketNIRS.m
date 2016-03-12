@@ -493,7 +493,7 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         plot(...
             currentcombinedtimeaxis,currentprocesseddata);
         title(sprintf('%s',strrep(currentfilename,'_',' ')))
-        xlabel('Time (seconds)');
+        xlabel('Time (seconds) relative to exercise challenge');
         ylabel(strrep(label,'_',' '));
         hold off
 
