@@ -25,12 +25,12 @@ clear all
 fileExtension = '*.PNI';
 
 % Keyword (e.g. study phase, subject IDs,)
-keyword = {'nirs'};
+keyword = {'Marshall'};
 
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
 % Must not have spaces, and work as a windows folder name
-label = 'CH2_delta_totalHb';
+label = 'CH1_delta_oxyHb';
 
 % Column of data to select
 col = 18; 
@@ -109,14 +109,15 @@ filelist = struct2cell(filelist);
 filelist = transpose(filelist(1,:));
 
 % Generate default marker array
-markerlist = cell(length(filelist),1);
+markerlist = cell(length(filelist),2);
 markerlist(:,1) = {2}; % beginning ramp by default is 2
+markerlist(:,2) = {3}; % end ramp by default is 3
 
 % Combine arrays
 inputlistarray = horzcat(filelist,markerlist);
 
 % Generate headers
-headers = {'filename','exeStart'};
+headers = {'filename','exeStart','exeEnd'};
 
 % Output to an easily editable workbook + notify in console
 inputfilename = 'RampEventMarkers.xlsx';
@@ -143,6 +144,7 @@ end
 
 % Collect ramp start data
 inputrampstarteventmarkers = rampeventmarkerinput.data.Sheet1(1:end,1);
+inputrampendeventmarkers = rampeventmarkerinput.data.Sheet1(1:end,2);
 
 
 %% Collect data from all files of interest 
@@ -166,9 +168,10 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         % point
         % Use input marker data
         idxrampstart = find(events == inputrampstarteventmarkers(iFilesOfInterest));
+        idxrampend   = find(events == inputrampendeventmarkers(iFilesOfInterest));
 
-        postrampstartdata = data(idxrampstart:end);
-        postrampstarttime = time(idxrampstart:end);
+        postrampstartdata = data(idxrampstart:idxrampend);
+        postrampstarttime = time(idxrampstart:idxrampend);
         prerampstartdata  = data(1:idxrampstart);
         prerampstarttime  = time(1:idxrampstart);
 
@@ -278,6 +281,7 @@ combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
 % 3 minute -10 sec bins %
 % Each bin is -10 seconds from time point of interest
 % Time points of interest are 0 (ramp start), and every 180 sec after
+% Use raw data from import
 
 % Initialize a cell array of interest +1 for study label
 threeminpostrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
@@ -295,9 +299,12 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         % Locate beginning of ramp and bin from ramp as the central point
         % Use input marker data
         idxrampstart = find(events == inputrampstarteventmarkers(iFilesOfInterest));
+        idxrampend   = find(events == inputrampendeventmarkers(iFilesOfInterest));
         
-        % Locate three minute intervals for individual session
-        currentadjustedtime = time - time(idxrampstart);
+        % Locate three minute intervals for individual session with ramp
+        % only
+        currentadjustedtime = time(idxrampstart:idxrampend);
+        currentadjustedtime = currentadjustedtime - time(idxrampstart);
         currentthreeminlocs = 0:180:currentadjustedtime(end);
 
         % Initialize method variables
