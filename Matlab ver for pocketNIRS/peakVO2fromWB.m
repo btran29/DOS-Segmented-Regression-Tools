@@ -55,16 +55,19 @@ endRows = [529
 peakVO2 = zeros(25,1);
 peakRQ  = zeros(25,1);
 peakHR  = zeros(25,1);
+peakHalfVO2 = zeros(25,1);
 
-coef_HR = zeros(25,1);
-coef_Work = zeros(25,1);
-coef_VO2 = zeros(25,1);
-coef_VCO2 = zeros(25,1);
-coef_RQ = zeros(25,1);
+coef_HR = zeros(25,2);
+coef_Work = zeros(25,2);
+coef_VO2 = zeros(25,2);
+coef_VO2kg = zeros(25,2);
+coef_VCO2 = zeros(25,2);
+coef_RQ = zeros(25,2);
 
 delta_HR = zeros(25,1);
 delta_Work = zeros(25,1);
 delta_VO2 = zeros(25,1);
+delta_VO2kg = zeros(25,1);
 delta_VCO2 = zeros(25,1);
 delta_RQ = zeros(25,1);
 
@@ -96,9 +99,9 @@ for iFile = 1:25
     exe_HR = HR(idx);
     exe_Work = Work(idx);
     exe_VO2 = VO2(idx); 
-    exe_VO2_kg = VO2_kg(idx);
+    exe_VO2kg = VO2kg(idx);
     exe_VCO2 = VCO2(idx);
-    exe_RQ = RQ(idX);
+    exe_RQ = RQ(idx);
     
 
     % Convert time values to decimals of exercise, simply called 'TimeSec_exe'
@@ -142,28 +145,31 @@ for iFile = 1:25
     % Determine time at 50% VO2 peak, called 'TimeSec_exe_halfpeak'
     [~,idx_peakVO2] = max(windowmean);
     idx_halfpeakVO2 = ceil(idx_peakVO2*0.5);
-    TimeSec_exe_halfpeak = TimeSec_exe(idx_halfpeakVO2);
+    peakHalfVO2(iFile) = TimeSec_exe(idx_halfpeakVO2);
     
     
     % Get slope of data from 0 to 50% VO2 peak
-    coef_HR = polyfit(TimeSec_exe(0:idx_halfpeakVO2),...
-                exe_HR(0:idx_halfpeakVO2),2);
-    coef_Work = polyfit(TimeSec_exe(0:idx_halfpeakVO2),...
-                    exe_Work(0:idx_halfpeakVO2),2);
-    coef_VO2 = polyfit(TimeSec_exe(0:idx_halfpeakVO2),...
-                    exe_VO2(0:idx_halfpeakVO2),2);                
-    coef_VCO2 = polyfit(TimeSec_exe(0:idx_halfpeakVO2),...
-                    exe_CVO2(0:idx_halfpeakVO2),2);
-    coef_RQ = polyfit(TimeSec_exe(0:idx_halfpeakVO2),...
-                    exe_RQ(0:idx_halfpeakVO2),2);
+    coef_HR(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
+                exe_HR(1:idx_halfpeakVO2),1);
+    coef_Work(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
+                    exe_Work(1:idx_halfpeakVO2),1);
+    coef_VO2(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
+                    exe_VO2(1:idx_halfpeakVO2),1);      
+    coef_VO2kg(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
+                    exe_VO2kg(1:idx_halfpeakVO2),1); 
+    coef_VCO2(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
+                    exe_VCO2(1:idx_halfpeakVO2),1);
+    coef_RQ(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
+                    exe_RQ(1:idx_halfpeakVO2),1);
                  
                 
     % Get delta value for data of interest from other variables
-    delta_HR = exe_HR(idx_halfpeakVO2)-exe_HR(1);
-    delta_Work = exe_Work(idx_halfpeakVO2)-exe_Work(1);
-    delta_VO2 = exe_VO2(idx_halfpeakVO2)-exe_VO2(1);
-    delta_VCO2 = exe_VCO2(idx_halfpeakVO2)-exe_VCO2(1);
-    delta_RQ = exe_RQ(idx_healfpeakVO2)-exe_RQ(1);
+    delta_HR(iFile) = exe_HR(idx_halfpeakVO2)-exe_HR(1);
+    delta_Work(iFile) = exe_Work(idx_halfpeakVO2)-exe_Work(1);
+    delta_VO2(iFile) = exe_VO2(idx_halfpeakVO2)-exe_VO2(1);
+    delta_VO2kg(iFile) = exe_VO2kg(idx_halfpeakVO2)-exe_VO2kg(1);
+    delta_VCO2(iFile) = exe_VCO2(idx_halfpeakVO2)-exe_VCO2(1);
+    delta_RQ(iFile) = exe_RQ(idx_halfpeakVO2)-exe_RQ(1);
     
 
 end % end file loop
