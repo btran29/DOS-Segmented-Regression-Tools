@@ -1,4 +1,4 @@
-function pocketnirslog = importNIRSdata(filename,startRow,endRow)
+function [pocketnirsdataset,pocketnirscell] = importNIRSdata(filename,startRow,endRow)
 %IMPORTFILE Import numeric data from a text file as a matrix.
 %   POCKETNIRSLOG2015022311 = IMPORTFILE(FILENAME) Reads data from text
 %   file FILENAME for the default selection.
@@ -48,7 +48,7 @@ end
 %   column23: double (%f)
 %	column24: double (%f)
 % For more information, see the TEXTSCAN documentation.
-formatSpec = '%f%s%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%[^\n\r]';
+formatSpec = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%[^\n\r]';
 
 %% Open the text file.
 fileID = fopen(filename,'r');
@@ -76,4 +76,5 @@ fclose(fileID);
 % script.
 
 %% Create output variable
-pocketnirslog = dataset(dataArray{1:end-1}, 'VarNames', {'ElapsedCnt','DateTime','ElapsedTime','Event','ExtTrgEvent','ZeroSet','CH1_PRbpm','CH1_BFau','CH1_oxyHbau','CH1_deoxyHbau','CH1_totalHbau','CH1_735nm','CH1_810nm','CH1_850nm','CH1_DARK','CH2_PRbpm','CH2_BFau','CH2_oxyHbau','CH2_deoxyHbau','CH2_totalHbau','CH2_735nm','CH2_810nm','CH2_850nm','CH2_DARK'});
+pocketnirsdataset = dataset(dataArray{1:end-1}, 'VarNames', {'ElapsedCnt','DateTime','ElapsedTime','Event','ExtTrgEvent','ZeroSet','CH1_PRbpm','CH1_BFau','CH1_oxyHbau','CH1_deoxyHbau','CH1_totalHbau','CH1_735nm','CH1_810nm','CH1_850nm','CH1_DARK','CH2_PRbpm','CH2_BFau','CH2_oxyHbau','CH2_deoxyHbau','CH2_totalHbau','CH2_735nm','CH2_810nm','CH2_850nm','CH2_DARK'});
+pocketnirscell = dataset2cell(pocketnirsdataset);

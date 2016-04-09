@@ -25,15 +25,15 @@ clear all
 fileExtension = '*.PNI';
 
 % Keyword (e.g. study phase, subject IDs,)
-keyword = {'Marshall'};
+keyword = {'pocket_nirs'};
 
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
 % Must not have spaces, and work as a windows folder name
-label = 'CH1_delta_oxyHb';
+label = 'CH2_delta_deoxyHb';
 
 % Column of data to select
-col = 18; 
+col = 17; 
 % Channel 1
     % column 7 = CH1_delta_oxyHb_(au)
     % column 8 = CH1_delta_deoxyHb_(au)	
@@ -549,40 +549,46 @@ cd(currentdir)
 
 
 % Output Data - Unbinned CSV format with ramp start adjusted time  %
+% TODO: FIX TO WORK WITHOUT USE OF DATASET DATA TYPE
 
-if nirs2rampstartcsv % manually set to to true or false in script input
-    disp('Outputting unbinned ramp adjusted time CSVs..')
-    % Get current directory if not already present
-    if exist('currentdir','var') == 0 %#ok<UNRCH>
-        currentdir = pwd; 
-    end
-
-    % Create new binned figures folder if not already present
-    unbinnedrampadjtimefolder = 'Data - unbinned with ramp adjusted time';
-    if exist(...
-            [currentdir '\' unbinnedrampadjtimefolder],...
-            'dir') == 0
-        mkdir(unbinnedrampadjtimefolder)
-    end
-
-    % Process will take ~1 min for each file
-    for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) 
-        pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
-
-        % Locate ramp start using selected event marker.
-        idxrampstart = pocketnirslog.Event==inputrampstarteventmarkers(iFilesOfInterest);
-
-        % Add in adjusted time column
-        pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
-
-        % Export to csv file in new folder
-        filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
-            label, '.csv'];
-        cd([currentdir '\' unbinnedrampadjtimefolder])
-        export(pocketnirslog,'file',filename,'Delimiter',',')
-        cd(currentdir)
-    end
-end
+% if nirs2rampstartcsv % manually set to to true or false in script input
+%     disp('Outputting unbinned ramp adjusted time CSVs..')
+%     % Get current directory if not already present
+%     if exist('currentdir','var') == 0 %#ok<UNRCH>
+%         currentdir = pwd; 
+%     end
+% 
+%     % Create new binned figures folder if not already present
+%     unbinnedrampadjtimefolder = 'Data - unbinned with ramp adjusted time';
+%     if exist(...
+%             [currentdir '\' unbinnedrampadjtimefolder],...
+%             'dir') == 0
+%         mkdir(unbinnedrampadjtimefolder)
+%     end
+% 
+%     % Process will take ~1 min for each file
+%     % Requires dataset data type support
+%     for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) 
+%         pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
+%         pocketnirs
+% 
+%         % Locate ramp start using selected event marker.
+%         for iRow = 1:length(pocketnirslog.Event)
+%             if isequal(pocketnirslog.Event,[''' inputrampstarteventmarkers(iFilesOfInterest)])
+%                 idxrampstart = iRow
+%             end
+%         end
+%         % Add in adjusted time column
+%         pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
+% 
+%         % Export to csv file in new folder
+%         filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
+%             label, '.csv'];
+%         cd([currentdir '\' unbinnedrampadjtimefolder])
+%         export(pocketnirslog,'file',filename,'Delimiter',',')
+%         cd(currentdir)
+%     end
+% end
 
 % Finished message
  disp('Done!')
