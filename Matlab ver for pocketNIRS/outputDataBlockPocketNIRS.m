@@ -1,4 +1,4 @@
-% Ver 3-9-16 Brian
+% Ver 4-9-16 Brian
 %% Output transposed block of a column of data from studies w/ keywords
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
@@ -113,6 +113,9 @@ markerlist = cell(length(filelist),2);
 markerlist(:,1) = {2}; % beginning ramp by default is 2
 markerlist(:,2) = {3}; % end ramp by default is 3
 
+% Generate default 50% peak VO2 array
+markerlist(:,3) = {0}; % default null value
+
 % Combine arrays
 inputlistarray = horzcat(filelist,markerlist);
 
@@ -145,6 +148,7 @@ end
 % Collect ramp start data
 inputrampstarteventmarkers = rampeventmarkerinput.data.Sheet1(1:end,1);
 inputrampendeventmarkers = rampeventmarkerinput.data.Sheet1(1:end,2);
+inputhalfpeakVO2time = rampeventmarkerinput.data.Sheet1(1:end,3);
 
 
 %% Collect data from all files of interest 
@@ -361,7 +365,51 @@ combinedthreemindatablock(1,1) = {'Time(sec)'};
 combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
 combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
+% Generate values highlighting the trajectory of the variable of interest %
 
+% Initialize collection variables
+firstvaluevariable = zeros(length(fileType(idxFilesOfInterest),1));
+halfpeakvariable = zeros(length(fileType(idxFilesOfInterest),1));
+coefvariable = zeros(length(fileType(idxFilesOfInterest),2));
+deltavariable = zeros(length(fileType(idxFilesOfInterest),1));
+halfpeakVO2datablock = cell(size(postrampdatablock,1)+1,5);
+
+% Collect values over files of interest using postrampdatablock data
+for iRow = 1:size(postrampdatablock,1);
+    if inputhalfpeakVO2time(iFilesOfInterest) ~= 0
+        % Assign data if 50% peak VO2 is present
+        idx_halfpeakVO2 = ceil(inputhalfpeakVO2time*0.1);
+        currentdata = postrampdatablock(iRow, 2:end);
+
+        % 0 and 50% peakVO2 values for variable of interest
+        firstvaluevariable(iFilesOfInterest) = currentdata(1);
+        halfpeakvariable(iFilesOfInterest) = currentdata(idx_halfpeakVO2);
+
+        % Get slope of data from 0 to 50% peakVO2
+        coefvariable(iFilesOfInterest,1:2) = polyfit(...
+            (0:10:currentdata(end)),...
+            currentdata(1:idx_halfpeakVO2),1);
+
+        % Get delta value from 0 to 50% peakVO2 for data of interest
+        deltavariable(iFilesOfInterest,1) = ...
+            currentdata(idx_halfpeakVO2) - currentdata(1);
+    else
+        % Put empty values if 50% peak VO2 is not present
+        firstvaluevariable(iFilesOfInterest) = NaN;
+        halfpeakvariable(iFilesOfInterest) = NaN;
+        coefvariable(iFilesOfInterest,1:2) = NaN;
+        deltavariable(iFilesOfInterest) = NaN;
+    end % end conditional that requires 50% peak VO2 time
+end % end testing session loop
+
+
+% Combine data into a block for output
+halfmaxdatablock(1:end,1) = postrampdatablock(1:end,1);
+halfmaxdatdablock(2:end,2:end) = horzcat(firstvaluevariable,...
+                                         halfpeakvariable,...
+                                         coefvariable,...
+                                         deltavariable);
+                                     
 
 %% Output figures for visual confirmation
 disp('Outputting figures..')
