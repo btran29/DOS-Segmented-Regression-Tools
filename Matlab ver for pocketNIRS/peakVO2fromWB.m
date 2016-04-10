@@ -1,4 +1,4 @@
-% Create input variables
+%% Create input variables
 sheetNames = {'1010',...
                 '1005',...
                 '1014',...
@@ -72,7 +72,7 @@ delta_VCO2 = zeros(25,1);
 delta_RQ = zeros(25,1);
 
 
-% File loop
+%% File loop
 for iFile = 1:25        
     % Import
     workbookFile = 'PS work rate calculations.xlsx';
@@ -173,3 +173,20 @@ for iFile = 1:25
     
 
 end % end file loop
+
+%% Combine
+T_Input = dataset(endRows,'ObsNames',sheetNames);
+T1 = dataset(peakVO2,peakRQ,peakHR,peakHalfVO2,'ObsNames',sheetNames);
+T2 = dataset(coef_HR,coef_Work,coef_VO2,coef_VO2kg,coef_VCO2,coef_RQ,...
+    'ObsNames',sheetNames);
+T3 = dataset(delta_HR,delta_Work,delta_VO2,delta_VO2kg,delta_VCO2,delta_RQ,...
+    'ObsNames',sheetNames);
+T_output = horzcat(T_Input,T1,T2,T3);
+
+%% Output to excel
+output_fid = 'exOutput.csv';
+export(T_output,'file',output_fid,'Delimiter',',');
+xlswrite(output_fid,T1,2,'A1');
+xlswrite(output_fid,T2,3,'A1');
+xlswrite(output_fid,T3,4,'A1');
+
