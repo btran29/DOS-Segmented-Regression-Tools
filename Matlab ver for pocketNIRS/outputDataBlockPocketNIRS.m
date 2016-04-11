@@ -1,4 +1,4 @@
-% Ver 4-9-16 Brian
+% Ver 4-11-16 Brian
 %% Output transposed block of a column of data from studies w/ keywords
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
@@ -30,10 +30,22 @@ keyword = {'pocket_nirs'};
 % Additional label for the output (e.g. keywords, variable of interest
 % in the column of data to select)
 % Must not have spaces, and work as a windows folder name
-label = 'CH2_delta_deoxyHb';
+labels = {'CH1_delta_oxyHb_(au)',...
+    'CH1_delta_deoxyHb_(au)',...
+    'CH1_delta_totalHb_(au)',...
+    'CH2_delta_oxyHb_(au)',...
+    'CH2_delta_deoxyHb_(au)',...
+    'CH2_delta_totalHb_(au)'};
 
 % Column of data to select
-col = 17; 
+cols = [7,8,9,16,17,18];
+
+for iCurrentdatatype = 1:length(labels);
+    label = labels{iCurrentdatatype};
+    col = cols(iCurrentdatatype);
+% Single data set at a time convention
+% label = 'CH2_delta_deoxyHb';
+% col = 17; 
 % Channel 1
     % column 7 = CH1_delta_oxyHb_(au)
     % column 8 = CH1_delta_deoxyHb_(au)	
@@ -120,7 +132,7 @@ markerlist(:,3) = {0}; % default null value
 inputlistarray = horzcat(filelist,markerlist);
 
 % Generate headers
-headers = {'filename','exeStart','exeEnd'};
+headers = {'filename','exeStart','exeEnd','timehalfpeakVO2'};
 
 % Output to an easily editable workbook + notify in console
 inputfilename = 'RampEventMarkers.xlsx';
@@ -130,9 +142,9 @@ fprintf('\nGenerated input workbook in current directory.')
 fprintf('\nNOTE: New data is in the 2nd sheet to prevent overwriting.\n')
 
 
-%% Require user input prior to continuing
-prompt = '\nHave the markers been located and entered into the input\n workbook? Press enter to continue. \n';
-x = input(prompt);
+% %% Require user input prior to continuing
+% prompt = '\nHave the markers been located and entered into the input\n workbook? Press enter to continue. \n';
+% x = input(prompt);
 
 
 %% Load input marker workbook
@@ -368,49 +380,62 @@ combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 % Generate values highlighting the trajectory of the variable of interest %
 
 % Initialize collection variables
-firstvaluevariable = zeros(length(fileType(idxFilesOfInterest),1));
-halfpeakvariable = zeros(length(fileType(idxFilesOfInterest),1));
-coefvariable = zeros(length(fileType(idxFilesOfInterest),2));
-deltavariable = zeros(length(fileType(idxFilesOfInterest),1));
-halfpeakVO2datablock = cell(size(postrampdatablock,1)+1,5);
+numberoftests = size(fileType(idxFilesOfInterest),1);
+firstvaluevariable = zeros(numberoftests,1);
+halfpeakvariable = zeros(numberoftests,1);
+coefvariable = zeros(numberoftests,2);
+deltavariable = zeros(numberoftests,1);
+halfpeakVO2datablock = cell(numberoftests+1,5);
 
 % Collect values over files of interest using postrampdatablock data
 for iRow = 1:size(postrampdatablock,1);
-    if inputhalfpeakVO2time(iFilesOfInterest) ~= 0
+    if inputhalfpeakVO2time(iRow) ~= 0
         % Assign data if 50% peak VO2 is present
-        idx_halfpeakVO2 = ceil(inputhalfpeakVO2time*0.1);
+        idx_halfpeakVO2 = ceil(inputhalfpeakVO2time(iRow)*0.1);
         currentdata = postrampdatablock(iRow, 2:end);
-
+        
+        % Clean up data from post ramp start data block
+        currentdata(:,all(cellfun(@isempty,currentdata),1)) = [];
+        currentdata = cell2mat(currentdata);
+        
         % 0 and 50% peakVO2 values for variable of interest
-        firstvaluevariable(iFilesOfInterest) = currentdata(1);
-        halfpeakvariable(iFilesOfInterest) = currentdata(idx_halfpeakVO2);
+        firstvaluevariable(iRow) = currentdata(1);
+        halfpeakvariable(iRow) = currentdata(idx_halfpeakVO2);
 
         % Get slope of data from 0 to 50% peakVO2
-        coefvariable(iFilesOfInterest,1:2) = polyfit(...
-            (0:10:currentdata(end)),...
+        coefvariable(iRow,1:2) = polyfit(...
+            (0:10:10*idx_halfpeakVO2-1),...
             currentdata(1:idx_halfpeakVO2),1);
 
         % Get delta value from 0 to 50% peakVO2 for data of interest
-        deltavariable(iFilesOfInterest,1) = ...
+        deltavariable(iRow,1) = ...
             currentdata(idx_halfpeakVO2) - currentdata(1);
     else
         % Put empty values if 50% peak VO2 is not present
-        firstvaluevariable(iFilesOfInterest) = NaN;
-        halfpeakvariable(iFilesOfInterest) = NaN;
-        coefvariable(iFilesOfInterest,1:2) = NaN;
-        deltavariable(iFilesOfInterest) = NaN;
+        firstvaluevariable(iRow) = NaN;
+        halfpeakvariable(iRow) = NaN;
+        coefvariable(iRow,1:2) = NaN;
+        deltavariable(iRow) = NaN;
     end % end conditional that requires 50% peak VO2 time
 end % end testing session loop
 
 
 % Combine data into a block for output
-halfmaxdatablock(1:end,1) = postrampdatablock(1:end,1);
-halfmaxdatdablock(2:end,2:end) = horzcat(firstvaluevariable,...
-                                         halfpeakvariable,...
-                                         coefvariable,...
-                                         deltavariable);
-                                     
-
+% This style solution will be supported in a future release, dataset might not
+%   currently incomplete
+% halfmaxdatablock = cell(size(postrampdatablock,1),5);
+% halfmaxdatablock(1:end,1) = postrampdatablock(1:end,1);
+% halfmaxdatablock{1:end,2:end} = horzcat(firstvaluevariable,...
+%                                          halfpeakvariable,...
+%                                          coefvariable,...
+%                                          deltavariable);
+%                                      
+slopevariable = coefvariable(:,1);
+yintvariable = coefvariable(:,2);
+T1 = dataset(firstvaluevariable,halfpeakvariable,...
+            slopevariable,yintvariable,deltavariable,...
+            'ObsNames',postrampdatablock(1:end,1));
+halfmaxdatablock = dataset2cell(T1);
 %% Output figures for visual confirmation
 disp('Outputting figures..')
 % Get current directory if not already present
@@ -580,14 +605,16 @@ xlswrite(outputworkbookfilename,combineddatablock,1,'A1');
 xlswrite(outputworkbookfilename,prerampdatablock,2,'A1');
 xlswrite(outputworkbookfilename,postrampdatablock,3,'A1');
 xlswrite(outputworkbookfilename,combinedthreemindatablock,4,'A1');
-xlswrite(outputworkbookfilename,inputmetadata,5,'A1');
+xlswrite(outputworkbookfilename, halfmaxdatablock,5,'A1');
+xlswrite(outputworkbookfilename,inputmetadata,6,'A1');
 e = actxserver('Excel.Application'); 
     ewb = e.Workbooks.Open([pwd '\' outputworkbookfilename]);
     ewb.Worksheets.Item(1).Name = 'For copy & paste';
     ewb.Worksheets.Item(2).Name = 'Pre-ramp-start data';
     ewb.Worksheets.Item(3).Name = 'Post-ramp-start data';
     ewb.Worksheets.Item(4).Name = 'Three Min Interval';
-    ewb.Worksheets.Item(5).Name = 'Metadata';
+    ewb.Worksheets.Item(5).Name = '0-50% peakVO2 data';
+    ewb.Worksheets.Item(6).Name = 'Metadata';
     ewb.Save
     ewb.Close(false);
     e.Quit
@@ -640,3 +667,4 @@ cd(currentdir)
 
 % Finished message
  disp('Done!')
+end

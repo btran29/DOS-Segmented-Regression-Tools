@@ -186,7 +186,3 @@ T_output = horzcat(T_Input,T1,T2,T3);
 %% Output to excel
 output_fid = 'exOutput.csv';
 export(T_output,'file',output_fid,'Delimiter',',');
-xlswrite(output_fid,T1,2,'A1');
-xlswrite(output_fid,T2,3,'A1');
-xlswrite(output_fid,T3,4,'A1');
-
