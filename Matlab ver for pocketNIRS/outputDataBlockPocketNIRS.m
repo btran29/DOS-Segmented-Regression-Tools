@@ -21,15 +21,17 @@
 % Reset environment
 clear all
 
-% File extension (e.g. '*.xls' or '*.csv'
-fileExtension = '*.PNI';
+% Use some string to uniquely identify files of interest. Can be file 
+% extensions or key words (e.g. '*.xls' or '*.csv')
+fileIdentifier = '*.PNI';
 
-% Keyword (e.g. study phase, subject IDs,)
+% If you would like to further narrow file selection you can use an 
+% additional key word (e.g. study phase, subject IDs, etc.)
 keyword = {'pocket_nirs'};
 
-% Additional label for the output (e.g. keywords, variable of interest
-% in the column of data to select)
-% Must not have spaces, and work as a windows folder name
+% Label for the output (e.g. keywords, variable of interest in the column 
+% of data to select). Must not have spaces, and work as a windows folder 
+% name (script will output folders with the same label to stratify output).
 labels = {'CH1_delta_oxyHb_(au)',...
     'CH1_delta_deoxyHb_(au)',...
     'CH1_delta_totalHb_(au)',...
@@ -37,15 +39,15 @@ labels = {'CH1_delta_oxyHb_(au)',...
     'CH2_delta_deoxyHb_(au)',...
     'CH2_delta_totalHb_(au)'};
 
-% Column of data to select
+% Assuming data is in a consistent format, this list corresponds to the 
+% column of data to select
 cols = [7,8,9,16,17,18];
 
-for iCurrentdatatype = 1:length(labels);
-    label = labels{iCurrentdatatype};
-    col = cols(iCurrentdatatype);
-% Single data set at a time convention
-% label = 'CH2_delta_deoxyHb';
-% col = 17; 
+% An example with only one data set
+% labels = 'CH2_delta_deoxyHb';
+% cols = 17; 
+
+% For reference
 % Channel 1
     % column 7 = CH1_delta_oxyHb_(au)
     % column 8 = CH1_delta_deoxyHb_(au)	
@@ -54,6 +56,15 @@ for iCurrentdatatype = 1:length(labels);
     % column 16 = CH2_delta_oxyHb_(au)
     % column 17 = CH2_delta_deoxyHb_(au)	
     % column 18 = CH2_delta_totalHb_(au)    
+
+% TODO: move the looped code to a function
+
+%% Loop across labels and columns
+for iCurrentdatatype = 1:length(labels);
+
+% Select current data type
+label = labels{iCurrentdatatype};
+col = cols(iCurrentdatatype);
 
 % Binning interval, seconds
 bininterval = 10; 
@@ -74,12 +85,15 @@ outputFileName = strcat('',keyword{1},'_',label);
 nirs2rampstartcsv = false;
 
 % Max number of data points per study for variable of interest
-numData = 500; % Some arbitrarily large value
+numData = 500; % Some arbitrarily large value; 
+%     TODO: replace 500 with a relevant dynamically generated variable
+%       can introduce an error if the length of any given study is larger
+%       than 500*binning interval.
 
 
 %% Identify files of interest
 % Generate file list
-fileType = dir(fileExtension);
+fileType = dir(fileIdentifier);
 
 % Initialize index of files of interest
 idxFilesOfInterest = false(size(fileType,1),1);

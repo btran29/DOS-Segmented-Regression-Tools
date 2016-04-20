@@ -57,6 +57,15 @@ peakRQ  = zeros(25,1);
 peakHR  = zeros(25,1);
 time_halfpeakVO2 = zeros(25,1);
 
+% value at start of exercise
+start_HR = zeros(25,1);
+start_Work = zeros(25,1);
+start_VO2 = zeros(25,1);
+start_VO2kg = zeros(25,1);
+start_VCO2 = zeros(25,1);
+start_RQ = zeros(25,1);
+
+% value at 50% peakVO2
 halfpeak_HR = zeros(25,1);
 halfpeak_Work = zeros(25,1);
 halfpeak_VO2 = zeros(25,1);
@@ -64,6 +73,15 @@ halfpeak_VO2kg = zeros(25,1);
 halfpeak_VCO2 = zeros(25,1);
 halfpeak_RQ = zeros(25,1);
 
+% halfpeak - start values
+delta_HR = zeros(25,1);
+delta_Work = zeros(25,1);
+delta_VO2 = zeros(25,1);
+delta_VO2kg = zeros(25,1);
+delta_VCO2 = zeros(25,1);
+delta_RQ = zeros(25,1);
+
+% slopes from start of exercise to half peak
 coef_HR = zeros(25,2);
 coef_Work = zeros(25,2);
 coef_VO2 = zeros(25,2);
@@ -71,12 +89,6 @@ coef_VO2kg = zeros(25,2);
 coef_VCO2 = zeros(25,2);
 coef_RQ = zeros(25,2);
 
-delta_HR = zeros(25,1);
-delta_Work = zeros(25,1);
-delta_VO2 = zeros(25,1);
-delta_VO2kg = zeros(25,1);
-delta_VCO2 = zeros(25,1);
-delta_RQ = zeros(25,1);
 
 
 %% File loop
@@ -169,7 +181,14 @@ for iFile = 1:25
     coef_RQ(iFile,1:2) = polyfit(TimeSec_exe(1:idx_halfpeakVO2),...
                     exe_RQ(1:idx_halfpeakVO2),1);
                  
-    
+    % Get value at start of exercise challenge
+    start_HR(iFile) = exe_HR(1);
+    start_Work(iFile) = exe_Work(1);
+    start_VO2(iFile) = exe_VO2(1);
+    start_VO2kg(iFile) = exe_VO2kg(1);
+    start_VCO2(iFile) = exe_VCO2(1);
+    start_RQ(iFile) = exe_RQ(1);
+                
     % Get value at 50% peak VO2 for data of interest
     halfpeak_HR(iFile) = exe_HR(idx_halfpeakVO2);
     halfpeak_Work(iFile) = exe_Work(idx_halfpeakVO2);
@@ -192,13 +211,15 @@ end % end file loop
 %% Combine
 T_Input = dataset(endRows,'ObsNames',sheetNames);
 T1 = dataset(peakVO2,peakRQ,peakHR,time_halfpeakVO2,'ObsNames',sheetNames);
-T2 = dataset(halfpeak_HR,halfpeak_Work,halfpeak_VO2,halfpeak_VO2kg,...
+T2 = dataset(start_HR,start_Work,start_VO2,start_VO2kg,start_VCO2,...
+    start_RQ,'ObsNames',sheetNames);
+T3 = dataset(halfpeak_HR,halfpeak_Work,halfpeak_VO2,halfpeak_VO2kg,...
     halfpeak_VCO2,halfpeak_RQ,'ObsNames',sheetNames);
-T3 = dataset(delta_HR,delta_Work,delta_VO2,delta_VO2kg,delta_VCO2,delta_RQ,...
+T4 = dataset(delta_HR,delta_Work,delta_VO2,delta_VO2kg,delta_VCO2,delta_RQ,...
     'ObsNames',sheetNames);
-T4 = dataset(coef_HR,coef_Work,coef_VO2,coef_VO2kg,coef_VCO2,coef_RQ,...
+T5 = dataset(coef_HR,coef_Work,coef_VO2,coef_VO2kg,coef_VCO2,coef_RQ,...
     'ObsNames',sheetNames);
-T_output = horzcat(T_Input,T1,T2,T3,T4);
+T_output = horzcat(T_Input,T1,T2,T3,T4,T5);
 
 %% Output to excel
 output_fid = 'exOutput.csv';
