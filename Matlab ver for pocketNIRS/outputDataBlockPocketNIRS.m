@@ -183,7 +183,7 @@ disp('Binning data..')
 postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
 
-% 10-second bins pre/post ramp start %
+%% 10-second bins pre/post ramp start %
 for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
     % Loop over all files of interest (within filetype) in the directory
     try
@@ -308,7 +308,7 @@ combineddatablock(2:end,2:end) = currentprocesseddata;
 combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
     
         
-% 3 minute -10 sec bins %
+%% 3 minute -10 sec bins %
 % Each bin is -10 seconds from time point of interest
 % Time points of interest are 0 (ramp start), and every 180 sec after
 % Use raw data from import
@@ -391,7 +391,7 @@ combinedthreemindatablock(1,1) = {'Time(sec)'};
 combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
 combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
-% Generate values highlighting the trajectory of the variable of interest %
+%% Generate values highlighting the trajectory of the variable of interest %
 
 % Initialize collection variables
 numberoftests = size(fileType(idxFilesOfInterest),1);

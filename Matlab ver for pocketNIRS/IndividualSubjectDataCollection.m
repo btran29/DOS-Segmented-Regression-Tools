@@ -19,7 +19,9 @@ binningInterval = 10;
 
 % Initialize collection variable for xlsx import data 
 workbooksNum = cell(numberOfFiles,2);
-workbooksRaw = cell(numberOfFiles,2);
+workbooksRaw = cell(numberOfFiles,2); 
+    %TODO: just use text data instead instead of raw as the numbers in the
+    %raw data currently are not used
 
 % Read excel files
 for iFile = 1:numberOfFiles
@@ -93,8 +95,11 @@ headers{1,1} = 'Time';
 
 % Use modified workbook names for the rest of the headers
 for iFile = 1:numberOfFiles
+   % Grab the work book file name
    currentHeader = filesOfInterest(iFile).name;
+   % Remove common terms in the file name
    currentHeader = strrep(currentHeader,'pocket_nirs_','');
+   % Remove file extension
    currentHeader = strrep(currentHeader,'.xlsx','');
    headers{1,iFile+1} = currentHeader;
 end
