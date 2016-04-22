@@ -1,100 +1,189 @@
 %% Create input variables
-sheetNames = {'1010',...
-                '1005',...
-                '1014',...
-                '1020',...
-                '1001',...
-                '1003',...
-                '1002',...
-                '1009',...
-                '1013',...
-                '1006',...
-                '1007',...
-                '1011',...
-                '1004',...
-                '1012',...
-                '1015',...
-                '1016',...
-                '1017',...
-                '1018',...
-                '1019',...
-                '1021',...
-                '1022',...
-                '1023',...
-                '1025',...
-                '1024',...
-                '1008'};
+%% 
+% PAMP1
+% workbookFile = 'PS work rate calculations.xlsx';
+% sheetNames = {'1010',...
+%                 '1005',...
+%                 '1014',...
+%                 '1020',...
+%                 '1001',...
+%                 '1003',...
+%                 '1002',...
+%                 '1009',...
+%                 '1013',...
+%                 '1006',...
+%                 '1007',...
+%                 '1011',...
+%                 '1004',...
+%                 '1012',...
+%                 '1015',...
+%                 '1016',...
+%                 '1017',...
+%                 '1018',...
+%                 '1019',...
+%                 '1021',...
+%                 '1022',...
+%                 '1023',...
+%                 '1025',...
+%                 '1024',...
+%                 '1008'};
+% 
+% endRows = [529
+%             463
+%             859
+%             463
+%             463
+%             463
+%             463
+%             529
+%             463
+%             463
+%             463
+%             397
+%             463
+%             595
+%             595
+%             331
+%             463
+%             529
+%             397
+%             463
+%             397
+%             397
+%             463
+%             529
+%             463];
+%%
+% FSHR Cohort 5
+workbookFile = 'Cohort5 V1 VO2 calculations.xlsx';
+sheetNames = {'501',...
+                '502',...
+                '503',...
+                '504',...
+                '505',...
+                '506',...
+                '507',...
+                '508',...
+                '509',...
+                '510',...
+                '511',...
+                '512',...
+                '513',...
+                '514',...
+                '515',...
+                '516',...
+                '517',...
+                '518',...
+                '519',...
+                '520',...
+                '521',...
+                '522',...
+                '523',...
+                '524',...
+                '525',...
+                '526',...
+                '527',...
+                '528',...
+                '529',...
+                '530',...
+                '531',...
+                '532',...
+                '533',...
+                '534',...
+                '535',...
+                '536'};
 
-endRows = [529
-            463
-            859
-            463
-            463
-            463
-            463
-            529
-            463
-            463
-            463
-            397
-            463
-            595
-            595
-            331
-            463
-            529
-            397
-            463
-            397
-            397
-            463
-            529
-            463];
+endRows = [469
+            665
+            467
+            467
+            467
+            599
+            403
+            535
+            468
+            467
+            406
+            469
+            467
+            601
+            468
+            469
+            600
+            403
+            467
+            731
+            469
+            535
+            604
+            533
+            467
+            533
+            533
+            402
+            535
+            599
+            665
+            401
+            401
+            467
+            602
+            400];
 
-% Create collection variables
-peakVO2 = zeros(25,1);
-peakRQ  = zeros(25,1);
-peakHR  = zeros(25,1);
-time_halfpeakVO2 = zeros(25,1);
+%% Input consistency check
+% Continue only if input length for two variables match in length
+if length(endRows) ~= length(sheetNames)
+    error('Mismatch between sheet names and number of rows for each subject')
+end
+
+
+%% Create collection variables
+numberOfParticipants = length(endRows);
+
+peakWork = zeros(numberOfParticipants,1);
+peakVO2 = zeros(numberOfParticipants,1);
+peakRQ  = zeros(numberOfParticipants,1);
+peakHR  = zeros(numberOfParticipants,1);
+time_halfpeakVO2 = zeros(numberOfParticipants,1);
 
 % value at start of exercise
-start_HR = zeros(25,1);
-start_Work = zeros(25,1);
-start_VO2 = zeros(25,1);
-start_VO2kg = zeros(25,1);
-start_VCO2 = zeros(25,1);
-start_RQ = zeros(25,1);
+start_HR = zeros(numberOfParticipants,1);
+start_Work = zeros(numberOfParticipants,1);
+start_VO2 = zeros(numberOfParticipants,1);
+start_VO2kg = zeros(numberOfParticipants,1);
+start_VCO2 = zeros(numberOfParticipants,1);
+start_RQ = zeros(numberOfParticipants,1);
 
 % value at 50% peakVO2
-halfpeak_HR = zeros(25,1);
-halfpeak_Work = zeros(25,1);
-halfpeak_VO2 = zeros(25,1);
-halfpeak_VO2kg = zeros(25,1);
-halfpeak_VCO2 = zeros(25,1);
-halfpeak_RQ = zeros(25,1);
+halfpeak_HR = zeros(numberOfParticipants,1);
+halfpeak_Work = zeros(numberOfParticipants,1);
+halfpeak_VO2 = zeros(numberOfParticipants,1);
+halfpeak_VO2kg = zeros(numberOfParticipants,1);
+halfpeak_VCO2 = zeros(numberOfParticipants,1);
+halfpeak_RQ = zeros(numberOfParticipants,1);
 
 % halfpeak - start values
-delta_HR = zeros(25,1);
-delta_Work = zeros(25,1);
-delta_VO2 = zeros(25,1);
-delta_VO2kg = zeros(25,1);
-delta_VCO2 = zeros(25,1);
-delta_RQ = zeros(25,1);
+delta_HR = zeros(numberOfParticipants,1);
+delta_Work = zeros(numberOfParticipants,1);
+delta_VO2 = zeros(numberOfParticipants,1);
+delta_VO2kg = zeros(numberOfParticipants,1);
+delta_VCO2 = zeros(numberOfParticipants,1);
+delta_RQ = zeros(numberOfParticipants,1);
 
 % slopes from start of exercise to half peak
-coef_HR = zeros(25,2);
-coef_Work = zeros(25,2);
-coef_VO2 = zeros(25,2);
-coef_VO2kg = zeros(25,2);
-coef_VCO2 = zeros(25,2);
-coef_RQ = zeros(25,2);
+coef_HR = zeros(numberOfParticipants,2);
+coef_Work = zeros(numberOfParticipants,2);
+coef_VO2 = zeros(numberOfParticipants,2);
+coef_VO2kg = zeros(numberOfParticipants,2);
+coef_VCO2 = zeros(numberOfParticipants,2);
+coef_RQ = zeros(numberOfParticipants,2);
 
 
 
 %% File loop
-for iFile = 1:25        
+for iFile = 1:numberOfParticipants        
     % Import
-    workbookFile = 'PS work rate calculations.xlsx';
+   
     sheetName = sheetNames{iFile};
     startRow = 12;
     endRow = endRows(iFile);
@@ -157,8 +246,9 @@ for iFile = 1:25
     
     % Get peak values
     peakVO2(iFile) = max(windowmean);
-    peakRQ(iFile)  = max(RQ(idx));
-    peakHR(iFile)  = max(HR);
+    peakRQ(iFile)  = max(exe_RQ);
+    peakHR(iFile)  = max(exe_HR);
+    peakWork(iFile) = max(exe_Work);
     
     
     % Determine time at 50% VO2 peak, called 'TimeSec_exe_halfpeak'
@@ -210,7 +300,7 @@ end % end file loop
 
 %% Combine
 T_Input = dataset(endRows,'ObsNames',sheetNames);
-T1 = dataset(peakVO2,peakRQ,peakHR,time_halfpeakVO2,'ObsNames',sheetNames);
+T1 = dataset(peakWork,peakVO2,peakRQ,peakHR,time_halfpeakVO2,'ObsNames',sheetNames);
 T2 = dataset(start_HR,start_Work,start_VO2,start_VO2kg,start_VCO2,...
     start_RQ,'ObsNames',sheetNames);
 T3 = dataset(halfpeak_HR,halfpeak_Work,halfpeak_VO2,halfpeak_VO2kg,...
@@ -222,5 +312,5 @@ T5 = dataset(coef_HR,coef_Work,coef_VO2,coef_VO2kg,coef_VCO2,coef_RQ,...
 T_output = horzcat(T_Input,T1,T2,T3,T4,T5);
 
 %% Output to excel
-output_fid = 'exOutput.csv';
+output_fid = 'ExerciseOutput.csv';
 export(T_output,'file',output_fid,'Delimiter',',');

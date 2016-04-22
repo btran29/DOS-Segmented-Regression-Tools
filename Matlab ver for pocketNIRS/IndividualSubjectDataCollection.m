@@ -9,13 +9,28 @@
 % Cannot have temporary xlsx files in the same directory, for example, from
 % a result from having the xlsx file open
 
+% Specify input sheet num
+sheetNum = 5;
+    % Reference
+    % sheetNum = 1 = binned optical data
+    % sheetNum = 4 = 3-minute interval data, set timeAxisInterval = 180
+    % sheetNum = 5 = peakVO2 related data
+
+% Specify file name of output workbook
+outputFileName = 'dataBySubject_50perpeakVO2.xlsx';
+
 % Select all files with a common identifier in the file-name
 fileIdentifier = 'pocket_nirs*';
 filesOfInterest = dir(fileIdentifier);
 numberOfFiles = length(filesOfInterest);
 
-% Binning interval (for regeneration of time axis)
-binningInterval = 10;
+% Specify time axis interval (for regeneration of time axis if present)
+timeAxisInterval = 10;
+% Label in workbooks to be compiled that denotes a continuous time axis
+timeLabel = 'Time(sec)';
+% Label in workbooks that denotes a general list of variables
+generalLabel = 'ObsNames';
+
 
 % Initialize collection variable for xlsx import data 
 workbooksNum = cell(numberOfFiles,2);
@@ -28,10 +43,10 @@ for iFile = 1:numberOfFiles
     % Import entire sheet both as a cell array and as raw numbers 
     % Repeat function call for 10-sec binned data and 3-min intervals data
     % [raw,text,numbers] = xlsread(...);
+    
+    % Import data from sheet
     [workbooksNum{iFile,1},~,workbooksRaw{iFile,1}] = xlsread(...
-        filesOfInterest(iFile).name,1);
-    [workbooksNum{iFile,2},~,workbooksRaw{iFile,2}] = xlsread(...
-        filesOfInterest(iFile).name,5);
+        filesOfInterest(iFile).name,sheetNum);
 end
 
 %% Double check subject order consistency (in case someone moves a row)
@@ -53,10 +68,16 @@ for iFile = 1:numberOfFiles
 end
    
 %% Compiling logic
-% if order consistency is set to TRUE, continue compiling with raw numbers
+% For a given row from all imported workbooks, compile the rows into a new
+% array.
 
-% Get subject list from a workbook
-initialParticipantList;
+% Required inputs
+workbooksNum; % nested cell array; contains numerical data of interest
+initialParticipantList; % cell array; subject list from a workbook
+numberOfFiles; % int; number of workbooks
+numberOfParticipants; % int taken from size of intialParticipantList
+% only if data is continuous
+timeAxisInterval; % int; interval between data (used to generate new time axis)
 
 % Create a collection variable for individual participant data
 SubjectData = cell(numberOfParticipants,1);
@@ -64,8 +85,18 @@ SubjectData = cell(numberOfParticipants,1);
 % Select data from particular row within a particular workbook
 for iParticipant = 1:numberOfParticipants
 for iWorkbook = 1:numberOfFiles
-% Select Data
-currentData = workbooksNum{iWorkbook,1}(iParticipant+1,:); % offset for time
+    
+% Select data based on type axis present
+% Assuming time axis is in multiples of binning interval
+firstRowTest = workbooksNum{1,1}(1,:);
+firstRowTest = firstRowTest-firstRowTest(1);
+if isequal(firstRowTest,0:timeAxisInterval:length(firstRowTest)*timeAxisInterval-1)
+    % select data offset for time
+    currentData = workbooksNum{iWorkbook,1}(iParticipant+1,:); 
+else
+    currentData = workbooksNum{iWorkbook,1}(iParticipant,:); 
+    
+end
 
 % Clean up data to put into a cell array
 currentData(:,~any(~isnan(currentData), 1))=[]; % remove NaNs
@@ -83,10 +114,24 @@ SubjectData{iParticipant}(2:end,iWorkbook+1) = currentDataCell;
 end
 % end workbook loop
 
-% Assign Time axis once per subject after data is located
-currentTimeAxis = 0:binningInterval:currentNumberOfDataPoints*binningInterval-1;
-currentTimeAxis = num2cell(currentTimeAxis);
-SubjectData{iParticipant}(2:end,1) = currentTimeAxis;
+% If subject does not have data, leave blank
+if isempty(currentData)
+    continue
+end
+
+% Assign time axis if time label is present
+if isequal(timeLabel,workbooksRaw{1,1}{1,1})
+    % Assign Time axis once per subject after data is located
+    currentTimeAxis = 0:timeAxisInterval:currentNumberOfDataPoints*timeAxisInterval-1;
+    currentTimeAxis = num2cell(currentTimeAxis);
+    SubjectData{iParticipant}(2:end,1) = currentTimeAxis;
+end
+
+% Assign general labels from workbook if present
+if isequal(generalLabel,workbooksRaw{1,1}{1,1})
+    SubjectData{iParticipant}(2:end,1) = workbooksRaw{1,1}(1,2:end);
+end
+
 end % end participant loop
 
 % Create col header collection variable, add time header
@@ -104,6 +149,20 @@ for iFile = 1:numberOfFiles
    headers{1,iFile+1} = currentHeader;
 end
 
+% Replace Channel numbers in headers with 'right' or 'left'
+
+% % Rules for PAMP1
+% % Remove common terms in the file name
+% headers = strrep(headers,'CH1','Left');
+% headers = strrep(headers,'CH2','Right');
+
+% Rules for FSHR Cohort 5
+% Remove common terms in the file name
+headers = strrep(headers,'CH1','Right');
+headers = strrep(headers,'CH2','Left');
+
+
+
 for iParticipant = 1:numberOfParticipants
     SubjectData{iParticipant,1}(1,1:end) = headers;
     % should throw an error if there is a mismatch with headers
@@ -114,13 +173,43 @@ end
 % Sample format: 'long' form data with cleaned up file names as column
 % headers, as well as a new column for time
 
-outputFileName = 'dataBySubject.xlsx';
+% Required inputs
+numberOfParticipants; % int taken from size of intialParticipantList
+initialParticipantList; % cell array of subjects from a workbook
+SubjectData; % nested cell array of subject data
+outputFileName; % output file name
 
-% Clean up participant names via regex
+
+%% Clean up participant names via regex
 % Get some characters after Marshall and use it for subject naming
 % pocket_nirs_log_20150223_11.54.02.Marshall1002SM_CH1.left_CH2.right_WR20.PNI
 
-expression = 'Marshall';
+% % % PAMP1
+% % expression = 'Marshall';
+% % % Initialize collection variable
+% % processedParticipantList = cell(numberOfParticipants,1);
+% % 
+% % % Clean up file name to isolate participant ID
+% % for iParticipant = 1:numberOfParticipants
+% %     % Locate approx where the participant ID is
+% %     idx = regexp(initialParticipantList{iParticipant},expression);
+% %     % Assign to collection variable
+% %     processedParticipantList{iParticipant} = ...
+% %         initialParticipantList{iParticipant}(...
+% %         idx+length(expression):idx+length(expression)+7);
+% %     % Remove periods
+% %     processedParticipantList{iParticipant} = ...
+% %         strrep(processedParticipantList{iParticipant},'.','');
+% %     % Remove '_C' (the beginning of _CH1 or _CH2)
+% %     processedParticipantList{iParticipant} = ...
+% %         strrep(processedParticipantList{iParticipant},'_C','');
+% %     % Remove remaining underscores
+% %     processedParticipantList{iParticipant} = ...
+% %         strrep(processedParticipantList{iParticipant},'_','');
+% % end
+
+% FSHR Cohort 5
+expression = '_C.1';
 % Initialize collection variable
 processedParticipantList = cell(numberOfParticipants,1);
 
@@ -131,19 +220,16 @@ for iParticipant = 1:numberOfParticipants
     % Assign to collection variable
     processedParticipantList{iParticipant} = ...
         initialParticipantList{iParticipant}(...
-        idx+length(expression):idx+length(expression)+7);
-    % Remove periods
-    processedParticipantList{iParticipant} = ...
-        strrep(processedParticipantList{iParticipant},'.','');
-    % Remove '_C' (the beginning of _CH1 or _CH2)
-    processedParticipantList{iParticipant} = ...
-        strrep(processedParticipantList{iParticipant},'_C','');
-    % Remove remaining underscores
+        idx-length(expression)-5:idx);
+    % Remove underscores
     processedParticipantList{iParticipant} = ...
         strrep(processedParticipantList{iParticipant},'_','');
+    % Get last 5 characters
+    processedParticipantList{iParticipant} = ...
+        processedParticipantList{iParticipant}(end-4:end);
 end
 
-% Output workbook and rename sheets
+%% Output workbook and rename sheets
 for iParticipant = 1:numberOfParticipants
     % Write to excel sheet
     xlswrite(outputFileName,SubjectData{iParticipant,1},iParticipant);
