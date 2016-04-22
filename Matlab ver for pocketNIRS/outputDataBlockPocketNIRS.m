@@ -1,4 +1,4 @@
-% Ver 4-11-16 Brian
+% Ver 4-22-16 Brian
 %% Output transposed block of a column of data from studies w/ keywords
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
@@ -156,10 +156,11 @@ fprintf('\nGenerated input workbook in current directory.')
 fprintf('\nNOTE: New data is in the 2nd sheet to prevent overwriting.\n')
 
 
-% %% Require user input prior to continuing
-% prompt = '\nHave the markers been located and entered into the input\n workbook? Press enter to continue. \n';
-% x = input(prompt);
-
+%% Require user input prior to continuing
+if iCurrentdatatype == 1
+prompt = '\nHave the markers & time to 50% peakVO2 been located and entered into the input\n workbook? Press enter to continue. \n';
+x = input(prompt);
+end
 
 %% Load input marker workbook
 rampeventmarkerinput = importdata('RampEventMarkers.xlsx');
@@ -403,7 +404,8 @@ halfpeakVO2datablock = cell(numberoftests+1,5);
 
 % Collect values over files of interest using postrampdatablock data
 for iRow = 1:size(postrampdatablock,1);
-    if inputhalfpeakVO2time(iRow) ~= 0
+    if inputhalfpeakVO2time(iRow) ~= 0 % 0 is default 
+        try
         % Assign data if 50% peak VO2 is present
         idx_halfpeakVO2 = ceil(inputhalfpeakVO2time(iRow)*0.1);
         currentdata = postrampdatablock(iRow, 2:end);
@@ -424,6 +426,13 @@ for iRow = 1:size(postrampdatablock,1);
         % Get delta value from 0 to 50% peakVO2 for data of interest
         deltavariable(iRow,1) = ...
             currentdata(idx_halfpeakVO2) - currentdata(1);
+        catch peakVO2Err
+           % Put empty values if 50% peak VO2
+            firstvaluevariable(iRow) = NaN;
+            halfpeakvariable(iRow) = NaN;
+            coefvariable(iRow,1:2) = NaN;
+            deltavariable(iRow) = NaN;
+        end
     else
         % Put empty values if 50% peak VO2 is not present
         firstvaluevariable(iRow) = NaN;

@@ -10,14 +10,14 @@
 % a result from having the xlsx file open
 
 % Specify input sheet num
-sheetNum = 5;
+sheetNum = 4;
     % Reference
     % sheetNum = 1 = binned optical data
     % sheetNum = 4 = 3-minute interval data, set timeAxisInterval = 180
     % sheetNum = 5 = peakVO2 related data
 
 % Specify file name of output workbook
-outputFileName = 'dataBySubject_50perpeakVO2.xlsx';
+outputFileName = 'dataBySubject_3min.xlsx';
 
 % Select all files with a common identifier in the file-name
 fileIdentifier = 'pocket_nirs*';
@@ -25,7 +25,7 @@ filesOfInterest = dir(fileIdentifier);
 numberOfFiles = length(filesOfInterest);
 
 % Specify time axis interval (for regeneration of time axis if present)
-timeAxisInterval = 10;
+timeAxisInterval = 180;
 % Label in workbooks to be compiled that denotes a continuous time axis
 timeLabel = 'Time(sec)';
 % Label in workbooks that denotes a general list of variables
@@ -156,11 +156,10 @@ end
 % headers = strrep(headers,'CH1','Left');
 % headers = strrep(headers,'CH2','Right');
 
-% Rules for FSHR Cohort 5
+% Rules for FSHR Cohort 5 and PAMP2
 % Remove common terms in the file name
 headers = strrep(headers,'CH1','Right');
 headers = strrep(headers,'CH2','Left');
-
 
 
 for iParticipant = 1:numberOfParticipants
@@ -208,25 +207,39 @@ outputFileName; % output file name
 % %         strrep(processedParticipantList{iParticipant},'_','');
 % % end
 
-% FSHR Cohort 5
-expression = '_C.1';
+% % FSHR Cohort 5
+% expression = '_C.1';
+% % Initialize collection variable
+% processedParticipantList = cell(numberOfParticipants,1);
+% 
+% % Clean up file name to isolate participant ID
+% for iParticipant = 1:numberOfParticipants
+%     % Locate approx where the participant ID is
+%     idx = regexp(initialParticipantList{iParticipant},expression);
+%     % Assign to collection variable
+%     processedParticipantList{iParticipant} = ...
+%         initialParticipantList{iParticipant}(...
+%         idx-length(expression)-5:idx);
+%     % Remove underscores
+%     processedParticipantList{iParticipant} = ...
+%         strrep(processedParticipantList{iParticipant},'_','');
+%     % Get last 5 characters
+%     processedParticipantList{iParticipant} = ...
+%         processedParticipantList{iParticipant}(end-4:end);
+% end
+
+% PAMP Cohort 2
 % Initialize collection variable
 processedParticipantList = cell(numberOfParticipants,1);
 
 % Clean up file name to isolate participant ID
 for iParticipant = 1:numberOfParticipants
-    % Locate approx where the participant ID is
-    idx = regexp(initialParticipantList{iParticipant},expression);
-    % Assign to collection variable
+    % Get first 7 characters
     processedParticipantList{iParticipant} = ...
-        initialParticipantList{iParticipant}(...
-        idx-length(expression)-5:idx);
+        initialParticipantList{iParticipant}(1:7);
     % Remove underscores
     processedParticipantList{iParticipant} = ...
-        strrep(processedParticipantList{iParticipant},'_','');
-    % Get last 5 characters
-    processedParticipantList{iParticipant} = ...
-        processedParticipantList{iParticipant}(end-4:end);
+        strrep(processedParticipantList{iParticipant},'_','');    
 end
 
 %% Output workbook and rename sheets
