@@ -3,23 +3,51 @@
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
 % paste-able block in a workbook named after the first search term.
-
-% Usage
+% 
+%% Workflow
+%
 % Set keyword to a study phase: e.g. keyword = {'Baseline'}. For
 % multiple keywords, make it a list, e.g. keyword = {'Baseline',
 % 'Brain', 'AnSa'}. Keywords can be anything in the file name,
 % as long as it is separated on both sides by the delimiter,
 % e.g. an empty space ' ' or an underscore '_'.
-
-% To select final 2 minutes of baseline data for copying,
-% set last2min to 'true' (without apostrophes, case 
-% sensitive).
-
-
+% 
+% Set label for the output (e.g. keywords, variable of interest in the 
+% selected data). It must not have spaces and work as a windows folder 
+% name. The script will output folders with the same label to make
+% individual files easier to find.
+%
+% Assuming that data across tests are consistent, select a column that
+% would correspond to the variable of interest, as labeled.
+%
+% On the first run, the script will output a workbook. This workbook will
+% point the script to where the exercise challenge starts, as well as the
+% the time point at which the participant has reached 50% of their peakVO2.
+% The default marker values should be copied and pasted into the first
+% sheet of this workbook. The time for 50% peakVO2 should be obtained from
+% metabolic cart data processing for each subject, then input in to the
+% *first* sheet of this workbook as well. The script can then be run once.
+%
+% The first output may look off; this is likely due to human error in
+% placing event markers. Look at the raw output of the script for the tests
+% that look incorrect and make adjustments to the selected markers as
+% necessary in the *first* sheet of event marker workbook. The second sheet
+% will be overwritten with default values every time the script is run to
+% show the format of the tables to be used as input.
+%
+% If you would like output more than one variable at a time, set up the
+% labels and columns as cell arrays:
+%       labels = {'CH1_delta_oxyHb_(au),'CH1_delta_deoxyHb_(au)'};
+%       cols = {7,8};
+%
+% The first label should correspond to the first selected column, and so
+% on.
+%
+%
 %% User input
-
-% Reset environment
-clear all
+% 
+% % Reset environment
+% clear all
 
 % Use some string to uniquely identify files of interest. Can be file 
 % extensions or key words (e.g. '*.xls' or '*.csv')
@@ -185,6 +213,14 @@ postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
 
 %% 10-second bins pre/post ramp start %
+% Bin data by binning interval, create a table. Sort individiual files in
+% to rows on the table. Output the table, in 3 formats with data before the 
+% start of the exercise challenge (warmup) and throughout the exercise
+% challenge. 'Right justify' the output data for the warmup and 'left
+% justify' the output data for the exercise challenge. 
+% Inputs: selected raw pocketNIRS (.PNI) formatted files via import
+% function
+
 for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
     % Loop over all files of interest (within filetype) in the directory
     try
@@ -246,7 +282,9 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
 end % end file loop
 
 
-% Locate maximum study length of time-axis by locating longest testing session % 
+% Locate maximum study length of time-axis by locating longest testing 
+% session in order to generate a time axis of the appropriate length and
+% 'right-justify' a block of data
 
 % Post ramp start data block
 maxlengthpostrampdatablock = findMaxTestLength(postrampdatablock)-1; % remove label
@@ -310,9 +348,12 @@ combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
     
         
 %% 3 minute -10 sec bins %
-% Each bin is -10 seconds from time point of interest
-% Time points of interest are 0 (ramp start), and every 180 sec after
-% Use raw data from import
+% Repeat binning procedure with 3-minute intervals. Each bin starts at
+% '-binning interval' (e.g. -10 seconds) from time point of interest. Time
+% points of interest start at 0 (ramp start), and every 180 sec after if
+% data is available. 
+% Inputs: selected raw pocketNIRS (.PNI) formatted files via import
+% function
 
 % Initialize a cell array of interest +1 for study label
 threeminpostrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
@@ -393,6 +434,9 @@ combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
 combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
 %% Generate values highlighting the trajectory of the variable of interest %
+% Given a time point of 50% peakVO2, locate the associated variable data at
+% that time point and at the start of the exercise challenge.
+% Inputs: binned data
 
 % Initialize collection variables
 numberoftests = size(fileType(idxFilesOfInterest),1);
@@ -460,6 +504,9 @@ T1 = dataset(firstvaluevariable,halfpeakvariable,...
             'ObsNames',postrampdatablock(1:end,1));
 halfmaxdatablock = dataset2cell(T1);
 %% Output figures for visual confirmation
+% Generate unique directories to output figures of both raw and binned
+% data.
+
 disp('Outputting figures..')
 % Get current directory if not already present
 if exist('currentdir','var') == 0
@@ -487,7 +534,8 @@ end
 
 
 if exist('DataOrEventErr','var') == 0
-% If there are no previous data aquisition errors, output raw data figs
+% If there are no previous data aquisition errors with raw data, output the
+% raw data figures
     for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         % Import data
         importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);

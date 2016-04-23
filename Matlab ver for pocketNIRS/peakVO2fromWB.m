@@ -1,4 +1,14 @@
+% Ver 4-22-16 Brian
+%% Metabolic cart data processing for pocketNIRS
+% This script automatically collects and calculates relevant data from the
+% metabolic cart. It will output the data into a condensed table.
+
 %% Create input variables
+% Given the current input format, an import function that collects and
+% cleans the metabolic cart data into a cell array is used. This import
+% function requires the names of the sheets (patient IDs) and the number of
+% rows of data to collect.
+
 %% 
 % PAMP1
 % workbookFile = 'PS work rate calculations.xlsx';

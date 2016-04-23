@@ -1,8 +1,18 @@
-% Script to put together all subject data in a single compiled workbook
-% Input: datablock tables from outputDataBlockPocketNIRS.m
-% Output: compiled cell arrays of data from each subject
+% Ver 4-22-16 Brian
+%% Script to put together all subject data in a single compiled workbook
+% Input: datablock tables from outputDataBlockPocketNIRS.m, selected rules
+% specific to the naming scheme used in each cohort (commented out)
+% Output: compiled cell arrays of data from each subject, excel workbook
+% with each sheet corresponding to all the available data for a single
+% participant
 
+%% Loop to generates all workbooks in current selected format
+sheetNums = {1,4,5};
+outputFileNames = {'dataBySubject.xlsx','dataBySubject_3min.xlsx',...
+                   'dataBySubject_50perPeakVO2.xlsx'};
+timeAxisIntervals = {10,180,10};
 
+for iWorkbookType = 1:length(sheetNums);
 %% Get output files in directory
 % open file/close files here
 % Possible errors:
@@ -10,14 +20,14 @@
 % a result from having the xlsx file open
 
 % Specify input sheet num
-sheetNum = 4;
+sheetNum = sheetNums{iWorkbookType};
     % Reference
     % sheetNum = 1 = binned optical data
     % sheetNum = 4 = 3-minute interval data, set timeAxisInterval = 180
     % sheetNum = 5 = peakVO2 related data
 
 % Specify file name of output workbook
-outputFileName = 'dataBySubject_3min.xlsx';
+outputFileName = outputFileNames{iWorkbookType};
 
 % Select all files with a common identifier in the file-name
 fileIdentifier = 'pocket_nirs*';
@@ -25,7 +35,7 @@ filesOfInterest = dir(fileIdentifier);
 numberOfFiles = length(filesOfInterest);
 
 % Specify time axis interval (for regeneration of time axis if present)
-timeAxisInterval = 180;
+timeAxisInterval = timeAxisIntervals{iWorkbookType};
 % Label in workbooks to be compiled that denotes a continuous time axis
 timeLabel = 'Time(sec)';
 % Label in workbooks that denotes a general list of variables
@@ -255,3 +265,5 @@ for iParticipant = 1:numberOfParticipants
         ewb.Close(false);
         e.Quit
 end
+
+end %% End workbook data types loop
