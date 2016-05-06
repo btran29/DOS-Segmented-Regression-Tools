@@ -12,12 +12,14 @@ dosdata <- read.csv(dosData.fid)
 dosdata.numberofstudies <-length(colnames(dosdata)[-1])
 
 # Segmented input table for each session
+# WARNING WILL OVERWRITE CURRENT TABLE
 # Four column long-style table
 default <- vector(mode = "numeric",length = length(dosdata.numberofstudies))
 seg.input.fid <- paste("segmentedInput",dosData.fid,sep="_")
 table   <- data.frame(file=colnames(dosdata)[-1],
                       specifiedBPs=default,
-                      segBP1=default)
+                      segBP1=default,
+                      segBP2=default)
 write.table(table,seg.input.fid,append=FALSE,row.names=FALSE,sep=",")
 
 # Set segmented input file of interest
@@ -55,6 +57,10 @@ for (session in 1:dosdata.numberofstudies){
       seg.out <- segmented(var.lm,seg.Z=~x,psi=list(x=c(seg.input$segBP1[session])),
                            control=seg.control(display=FALSE,n.boot=50,
                                                it.max=seg.it))
+    } else if (seg.input$specifiedBPs[session] == 2){
+      seg.out <- segmented(var.lm,seg.z=~x,psi=list(x=c(seg.input$segBP1[session],seg.input$segBP2[session])),
+                           control=seg.control(display=FALSE,n.boot=50,
+                                               it.max=seg.it))
     } # end specified bp conditionals
   }) # end try statement
   
@@ -66,9 +72,9 @@ for (session in 1:dosdata.numberofstudies){
 normTime <- dosdata$Time # required by collectBPdata
 bp.outputlist <-sapply(bp.output,collectBPdata,span,hasExeData=FALSE,simplify=FALSE,USE.NAMES=TRUE)
 
-# Remove data for sessions with >1 bp
+# Remove data for sessions with >2 bp, or were supposed to have 0 bp
 for (session in 1:dosdata.numberofstudies){
-  if (length(bp.outputlist[[session]]$bpEstX)>1){
+  if (seg.input$specifiedBPs[session] ==0 || length(bp.outputlist[[session]]$bpEstX)>2){
     bp.outputlist[[session]] <- data.frame(bpEstX=double(),
                                            bpEstY=double(),
                                            lConf=double(),

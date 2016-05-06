@@ -259,17 +259,41 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
         break
     end
-
+    
+    % Clean up file name
+    currentFileName = fileType(iFilesOfInterest).name;
+    expression = '\d\d\d\d_[A-Z][A-Z]_'; % Search for ID + 2 lett initials
+    expression2 = '\d\d\d\d_[A-Z][A-Z][A-Z]_'; % ID + 3 letter initials
+    expression3 = '\d\d\d_[A-Z][A-Z]_'; % 3 number ID + 2 lett initials
+    % Use expression 1
+    idx = regexp(currentFileName,expression);
+    if isempty(idx) == 1
+        idx = regexp(currentFileName,expression);
+    end
+    % If expression 1 does not work, use expression 2
+    if isempty(idx) == 1
+        idx = regexp(currentFileName,expression2);
+    end
+    % If expression 2 does not work, use expression 3
+    if isempty(idx) == 1
+        idx = regexp(currentFileName,expression3);
+    end
+    % Remove alphabetic characters and underscores
+    subjectIdentifier = currentFileName(idx:idx+4);
+    subjectIdentifier = strrep(subjectIdentifier,'_','');
+    subjectIdentifier = regexprep(subjectIdentifier,'[A-Z]','');
+    
+   
     % Enter post ramp data into cell array shifted 1 col for study label
     postrampdatablock(iFilesOfInterest,1) = cellstr(...
-        fileType(iFilesOfInterest).name);
+        subjectIdentifier);
     postrampdatablock(iFilesOfInterest,...
         2:(size(postrampstartBinMeans,1)+1)) = ...
     transpose(num2cell(postrampstartBinMeans));
 
     % Enter pre ramp data into cell array shifted 1 col for study label
     prerampdatablock(iFilesOfInterest,1) = cellstr(...
-        fileType(iFilesOfInterest).name);
+        subjectIdentifier);
     prerampdatablock(iFilesOfInterest,...
         2:(size(prerampstartBinMeans,1)+1)) = ...
         transpose(num2cell(prerampstartBinMeans));
@@ -405,9 +429,32 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         break
     end
     
+      % Clean up file name
+    currentFileName = fileType(iFilesOfInterest).name;
+    expression = '\d\d\d\d_[A-Z][A-Z]_'; % Search for ID + 2 lett initials
+    expression2 = '\d\d\d\d_[A-Z][A-Z][A-Z]_'; % ID + 3 letter initials
+    expression3 = '\d\d\d_[A-Z][A-Z]_'; % 3 number ID + 2 lett initials
+    % Use expression 1
+    idx = regexp(currentFileName,expression);
+    if isempty(idx) == 1
+        idx = regexp(currentFileName,expression);
+    end
+    % If expression 1 does not work, use expression 2
+    if isempty(idx) == 1
+        idx = regexp(currentFileName,expression2);
+    end
+    % If expression 2 does not work, use expression 3
+    if isempty(idx) == 1
+        idx = regexp(currentFileName,expression3);
+    end
+    % Remove alphabetic characters and underscores
+    subjectIdentifier = currentFileName(idx:idx+4);
+    subjectIdentifier = strrep(subjectIdentifier,'_','');
+    subjectIdentifier = regexprep(subjectIdentifier,'[A-Z]','');
+    
     % Enter post ramp data into cell array shifted 1 col for study label
     threeminpostrampdatablock(iFilesOfInterest,1) = cellstr(...
-        fileType(iFilesOfInterest).name);
+        subjectIdentifier);
     threeminpostrampdatablock(iFilesOfInterest,...
         2:(size(last10secBinMeans,1)+1)) = ...
     transpose(num2cell(last10secBinMeans));
@@ -429,7 +476,7 @@ combinedthreemindatablock = cell(...
     size(threeminpostrampdatablock,1)+1,...
     (maxlengththreemindatablock+1));
 
-combinedthreemindatablock(1,1) = {'Time(sec)'};
+combinedthreemindatablock(1,1) = {'SubjectID'};
 combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
 combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
