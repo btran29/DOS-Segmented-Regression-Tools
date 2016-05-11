@@ -695,6 +695,13 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
     end
 end
 
+%% Workbook post-processing
+combineddatablock = contigIDsort(combineddatablock);
+prerampdatablock = contigIDsort(prerampdatablock);
+postrampdatablock = contigIDsort(postrampdatablock);
+combinedthreemindatablock = contigIDsort(combinedthreemindatablock);
+halfmaxdatablock = contigIDsort(halfmaxdatablock);
+
 %% Output spreadsheets
 disp('Outputting spreadsheets..')
 % Data - Binned Summary excel workbook format %
