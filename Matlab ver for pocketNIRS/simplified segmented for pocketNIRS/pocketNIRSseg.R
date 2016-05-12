@@ -12,12 +12,14 @@ dosdata <- read.csv(dosData.fid)
 dosdata.numberofstudies <-length(colnames(dosdata)[-1])
 
 # Segmented input table for each session
+# WARNING WILL OVERWRITE CURRENT TABLE
 # Four column long-style table
 default <- vector(mode = "numeric",length = length(dosdata.numberofstudies))
 seg.input.fid <- paste("segmentedInput",dosData.fid,sep="_")
 table   <- data.frame(file=colnames(dosdata)[-1],
                       specifiedBPs=default,
-                      segBP1=default)
+                      segBP1=default,
+                      segBP2=default)
 write.table(table,seg.input.fid,append=FALSE,row.names=FALSE,sep=",")
 
 # Set segmented input file of interest
@@ -39,20 +41,25 @@ bp.output <- replicate(dosdata.numberofstudies, list())
 # Workflow note: play with values until segmented works for a session
 # If no values work/data is undecipherable, leave at 0 specified BPs
 # Expand loop to eventually cover entire number of available studies
+library(segmented)
 for (session in 1:dosdata.numberofstudies){
-
+  
   var.column <- session+1
   var <- data.frame(x=dosdata$Time, y=dosdata[,var.column])
   var.lm  <- lm(y~x,data=var)
-
+  
   # Run segmented into collection variable
   try({
     if (seg.input$specifiedBPs[session] == 0){
       seg.out <- segmented(var.lm,seg.Z=~x,psi=list(x=NA),
-                          control=seg.control(stop.if.error=FALSE,n.boot=0,
-                                              it.max=seg.it))
+                           control=seg.control(stop.if.error=FALSE,n.boot=0,
+                                               it.max=seg.it))
     } else if (seg.input$specifiedBPs[session] == 1){
       seg.out <- segmented(var.lm,seg.Z=~x,psi=list(x=c(seg.input$segBP1[session])),
+                           control=seg.control(display=FALSE,n.boot=50,
+                                               it.max=seg.it))
+    } else if (seg.input$specifiedBPs[session] == 2){
+      seg.out <- segmented(var.lm,seg.Z=~x,psi=list(x=c(seg.input$segBP1[session],seg.input$segBP2[session])),
                            control=seg.control(display=FALSE,n.boot=50,
                                                it.max=seg.it))
     } # end specified bp conditionals
@@ -66,14 +73,25 @@ for (session in 1:dosdata.numberofstudies){
 normTime <- dosdata$Time # required by collectBPdata
 bp.outputlist <-sapply(bp.output,collectBPdata,span,hasExeData=FALSE,simplify=FALSE,USE.NAMES=TRUE)
 
-# Remove data for sessions with >1 bp
+# Remove data for sessions with >2 bp, or were considered uninterpretable
 for (session in 1:dosdata.numberofstudies){
-  if (length(bp.outputlist[[session]]$bpEstX)>1){
+  if (seg.input$specifiedBPs[session] ==0 || length(bp.outputlist[[session]]$bpEstX)>2){
     bp.outputlist[[session]] <- data.frame(bpEstX=double(),
                                            bpEstY=double(),
                                            lConf=double(),
                                            uConf=double(),
                                            bpRelTime=double())
+  }
+}
+
+
+## Cleaned output with only latest breakpoint
+# Make a copy for the cleaned output
+bp.outputlist.cleaned <- bp.outputlist
+# For the cleaned output, select only second data point if there are testing sessions with 2 break points
+for (session in 1:dosdata.numberofstudies){
+  if (length(bp.outputlist.cleaned[[session]]$bpEstX) == 2){
+    bp.outputlist.cleaned[[session]] <- bp.outputlist.cleaned[[session]][2,]
   }
 }
 
@@ -86,18 +104,37 @@ for (session in 1:dosdata.numberofstudies){
 
 # Concatenate file names 
 for (session in 1:dosdata.numberofstudies){
-  if (length(bp.outputlist[[session]]$bpEstX)==1){
-  bp.outputlist[[session]]$file <- session.fid[[session]]
-  bp.outputlist[[session]] <-  bp.outputlist[[session]][c(7,1,2,3,4,5,6)] # file names to 1st column
+  if (length(bp.outputlist.cleaned[[session]]$bpEstX)==1){
+    bp.outputlist.cleaned[[session]]$file <- session.fid[[session]]
+    bp.outputlist.cleaned[[session]] <-  bp.outputlist.cleaned[[session]][c(7,1,2,3,4,5,6)] # file names to 1st column
   }
 }
 
 # Write to table
+seg.out.fid <-  paste("segmentedOutput",dosData.fid,sep="_") # file name
+
 for (session in 1:dosdata.numberofstudies){
-  seg.out.fid <-  paste("segmentedOutput",dosData.fid,sep="_")
-  if(session==1){ # Create column names with first set of data
-    write.table(bp.outputlist[[session]],file=seg.out.fid,append=T, sep=",",row.names = F)  
-  } else if(session>1){ # Just write row w/out column names
-    write.table(bp.outputlist[[session]],file=seg.out.fid,append=T, sep=",",row.names = F,col.names=F)
+  # Column names of first study with data
+  if (length(bp.outputlist.cleaned[[session]]) == 7){
+    write.table(bp.outputlist.cleaned[[session]],file=seg.out.fid,append=T, sep=",",row.names = F)
+    session.start <- session+1
+    break
   }
+}
+
+for (session in session.start:dosdata.numberofstudies){
+  # Continue writing w/o column names starting from last session with full data
+  write.table(bp.outputlist.cleaned[[session]],file=seg.out.fid,append=T, sep=",",row.names = F,col.names=F)
+}
+
+
+## Output figures
+# Required input - bp.output, a list of segmented outputs
+for(session in 1:dosdata.numberofstudies){
+  # Plot figures - Use try statements as some data is known to be too
+  # noisy to all have breakpoints or successful
+  seg.out.fig.fid <- paste(bp.outputlist[[session]]$file,dosData.fid,sep = "_")
+  tiff(seg.out.fig.fid, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
+  try({bpFigures(bp.output[[session]],"Time (min)","Left [HbR] (uM)","PFC HbR")})
+  dev.off() 
 }
