@@ -3,7 +3,7 @@
 directory	<- dir(pattern="*.csv")
 
 # Set data file of interest
-dosData.fid <- directory[2]
+dosData.fid <- directory[1]
 
 # Grab data from pre-formatted CSV file
 # Each testing session is one column, time is on axis
@@ -11,6 +11,7 @@ dosData.fid <- directory[2]
 dosdata <- read.csv(dosData.fid)
 dosdata.numberofstudies <-length(colnames(dosdata)[-1])
 
+########################################
 # Segmented input table for each session
 # WARNING WILL OVERWRITE CURRENT TABLE
 # Four column long-style table
@@ -21,10 +22,12 @@ table   <- data.frame(file=colnames(dosdata)[-1],
                       segBP1=default,
                       segBP2=default)
 write.table(table,seg.input.fid,append=FALSE,row.names=FALSE,sep=",")
+#######################################
+
 
 # Set segmented input file of interest
 directory	<- dir(pattern="*.csv")
-seg.input.fid <- directory[4]
+seg.input.fid <- directory[3]
 
 
 
@@ -51,7 +54,7 @@ for (session in 1:dosdata.numberofstudies){
   # Run segmented into collection variable
   try({
     if (seg.input$specifiedBPs[session] == 0){
-      seg.out <- segmented(var.lm,seg.Z=~x,psi=list(x=NA),
+      seg.out <- segmented(var.lm,seg.Z=~x,psi=list(x=10),
                            control=seg.control(stop.if.error=FALSE,n.boot=0,
                                                it.max=seg.it))
     } else if (seg.input$specifiedBPs[session] == 1){
@@ -102,13 +105,45 @@ for (session in 1:dosdata.numberofstudies){
   session.fid[[session]] <- colnames(dosdata)[session+1] # Skip time in column names
 }
 
-# Concatenate file names 
+# Concatenate file names of studies that have data
 for (session in 1:dosdata.numberofstudies){
   if (length(bp.outputlist.cleaned[[session]]$bpEstX)==1){
     bp.outputlist.cleaned[[session]]$file <- session.fid[[session]]
     bp.outputlist.cleaned[[session]] <-  bp.outputlist.cleaned[[session]][c(7,1,2,3,4,5,6)] # file names to 1st column
   }
 }
+# 
+# # clean up file names of those studies that have data via RegExp
+# for (session in 1:dosdata.numberofstudies){
+#   if (length(bp.outputlist.cleaned[[session]]$bpEstX)==1){
+#     expression = '\\d\\d\\d\\d_[A-Z][A-Z]_' # Search for ID + 2 lett initials
+#     expression2 = '\\d\\d\\d\\d_[A-Z][A-Z][A-Z]_' # ID + 3 letter initials
+#     expression3 = '\\d\\d\\d_[A-Z][A-Z]_' # 3 number ID + 2 lett initials
+#     expression4 = '_\\d\\d\\d_[A-Z]' # just 2 lett initials
+#     
+#     # Use expressions sequentially if one doesn't work
+#     idx <- regexpr(expression, bp.outputlist.cleaned[[session]]$file)
+#     if (idx[1] == -1){
+#       idx <- regexpr(expression2, bp.outputlist.cleaned[[session]]$file)
+#     }
+#     if (idx[1] == -1){
+#       idx <- regexpr(expression3, bp.outputlist.cleaned[[session]]$file)
+#     }
+#     if (idx[1] == -1){
+#       idx <- regexpr(expression4, bp.outputlist.cleaned[[session]]$file)
+#     }
+#     
+#     # Remove alphabetic characters and underscores
+#     subjectIdentifier = substr(bp.outputlist.cleaned[[session]]$file, idx[1],idx[1]+4)
+#     subjectIdentifier = gsub('_','',subjectIdentifier)
+#     subjectIdentifier = gsub('[A-Z]','',subjectIdentifier)
+#     
+#     # Assignment into cleaned output list
+#     bp.outputlist.cleaned[[session]]$file <- subjectIdentifier
+#   }
+#   
+# }
+
 
 # Write to table
 seg.out.fid <-  paste("segmentedOutput",dosData.fid,sep="_") # file name
@@ -129,12 +164,19 @@ for (session in session.start:dosdata.numberofstudies){
 
 
 ## Output figures
-# Required input - bp.output, a list of segmented outputs
+# Required input - bp.output, a list of segmented outputs, seg.input, a data frame of specified BPs
 for(session in 1:dosdata.numberofstudies){
-  # Plot figures - Use try statements as some data is known to be too
-  # noisy to all have breakpoints or successful
-  seg.out.fig.fid <- paste(bp.outputlist[[session]]$file,dosData.fid,sep = "_")
-  tiff(seg.out.fig.fid, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
-  try({bpFigures(bp.output[[session]],"Time (min)","Left [HbR] (uM)","PFC HbR")})
-  dev.off() 
+  # If studies have data and are not specified to be uninterperetable
+  if (length(bp.output[[session]]$psi)/3 >= 1 && seg.input$specifiedBPs[session] != 0 ){
+    
+    seg.out.fig.fid <- paste(bp.outputlist.cleaned[[session]]$file,'_',
+                             gsub('.csv','',dosData.fid),'.tiff',sep = "")
+    
+    tiff(seg.out.fig.fid, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
+    
+    # Plot figures - Use try statements as some data is known to be too
+    # noisy to all have breakpoints or successful
+    try({bpFigures(bp.output[[session]],"Time (min)","Left [HbR] (uM)","PFC HbR")})
+    dev.off() 
+  }
 }
