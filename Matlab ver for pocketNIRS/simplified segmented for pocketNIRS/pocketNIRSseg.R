@@ -40,6 +40,9 @@ seg.input <- read.csv(seg.input.fid)
 bp.output <- replicate(dosdata.numberofstudies, list()) 
 #bp.output <- vector(mode = "list", length = dosdata.numberofstudies)
 
+# Initalize time collection variable
+time.output <- vector(mode="list", length=dosdata.numberofstudies)
+
 # Collect intial guessing data for segmented
 # Workflow note: play with values until segmented works for a session
 # If no values work/data is undecipherable, leave at 0 specified BPs
@@ -70,11 +73,16 @@ for (session in 1:dosdata.numberofstudies){
   
   bp.output[[session]] <- seg.out #Save seg.out (list datatype) into bp.output list
   rm(seg.out,var.lm)
+  
+  # Generate time axis for every study
+  time.output[[session]] <- length(var$y)*10 # 10 second bins
 }
 
+
+
 # Collect BP Data, using collectBPdata function
-normTime <- dosdata$Time # required by collectBPdata
-bp.outputlist <-sapply(bp.output,collectBPdata,span,hasExeData=FALSE,simplify=FALSE,USE.NAMES=TRUE)
+span = 0
+bp.outputlist <- mapply(collectBPdata,bp.output,time.output,span,hasExeData=FALSE,USE.NAMES =TRUE,SIMPLIFY = FALSE)
 
 # Remove data for sessions with >2 bp, or were considered uninterpretable
 for (session in 1:dosdata.numberofstudies){

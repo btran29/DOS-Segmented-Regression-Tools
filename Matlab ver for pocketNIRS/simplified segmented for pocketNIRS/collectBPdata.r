@@ -6,7 +6,7 @@
 #			+/- span (e.g. +/- 5 seconds)
 #		compile this data into a data frame
 # Output: data frame
-collectBPdata <- function(argv,span,hasExeData){
+collectBPdata <- function(argv,normTime,span,hasExeData){
   # Pre-allocate temporary vectors
   # Segmented variables of interest
   bpEstX      <- vector()
