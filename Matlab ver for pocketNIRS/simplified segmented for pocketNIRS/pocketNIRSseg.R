@@ -75,7 +75,7 @@ for (session in 1:dosdata.numberofstudies){
   rm(seg.out,var.lm)
   
   # Generate time axis for every study
-  time.output[[session]] <- length(var$y)*10 # 10 second bins
+  time.output[[session]] <- length(var$y[!is.na(var$y)])*10 # 10 second bins
 }
 
 
@@ -120,6 +120,14 @@ for (session in 1:dosdata.numberofstudies){
     bp.outputlist.cleaned[[session]] <-  bp.outputlist.cleaned[[session]][c(7,1,2,3,4,5,6)] # file names to 1st column
   }
 }
+# Concatonate timeEnd of studies that have data
+for (session in 1:dosdata.numberofstudies){
+  if (length(bp.outputlist.cleaned[[session]]$bpEstX)==1){
+    bp.outputlist.cleaned[[session]]$endTime <- time.output[[session]]
+  }
+}
+
+
 # 
 # # clean up file names of those studies that have data via RegExp
 # for (session in 1:dosdata.numberofstudies){
@@ -158,7 +166,7 @@ seg.out.fid <-  paste("segmentedOutput",dosData.fid,sep="_") # file name
 
 for (session in 1:dosdata.numberofstudies){
   # Column names of first study with data
-  if (length(bp.outputlist.cleaned[[session]]) == 7){
+  if (length(bp.outputlist.cleaned[[session]]) == 8){
     write.table(bp.outputlist.cleaned[[session]],file=seg.out.fid,append=T, sep=",",row.names = F)
     session.start <- session+1
     break
