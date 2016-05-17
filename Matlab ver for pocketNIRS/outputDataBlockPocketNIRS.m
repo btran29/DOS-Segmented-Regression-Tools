@@ -259,30 +259,12 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
         break
     end
-    
-    % Clean up file name
+     
+    % Clean up file name via function 'getsubjectID'
+    % Input: file name, string
+    % Output: subject ID, string
     currentFileName = fileType(iFilesOfInterest).name;
-    expression = '\d\d\d\d_[A-Z][A-Z]_'; % Search for ID + 2 lett initials
-    expression2 = '\d\d\d\d_[A-Z][A-Z][A-Z]_'; % ID + 3 letter initials
-    expression3 = '\d\d\d_[A-Z][A-Z]_'; % 3 number ID + 2 lett initials
-    % Use expression 1
-    idx = regexp(currentFileName,expression);
-    if isempty(idx) == 1
-        idx = regexp(currentFileName,expression);
-    end
-    % If expression 1 does not work, use expression 2
-    if isempty(idx) == 1
-        idx = regexp(currentFileName,expression2);
-    end
-    % If expression 2 does not work, use expression 3
-    if isempty(idx) == 1
-        idx = regexp(currentFileName,expression3);
-    end
-    % Remove alphabetic characters and underscores
-    subjectIdentifier = currentFileName(idx:idx+4);
-    subjectIdentifier = strrep(subjectIdentifier,'_','');
-    subjectIdentifier = regexprep(subjectIdentifier,'[A-Z]','');
-    
+    subjectIdentifier = getsubjectID(curentFileName);
    
     % Enter post ramp data into cell array shifted 1 col for study label
     postrampdatablock(iFilesOfInterest,1) = cellstr(...
@@ -376,8 +358,18 @@ combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
 % '-binning interval' (e.g. -10 seconds) from time point of interest. Time
 % points of interest start at 0 (ramp start), and every 180 sec after if
 % data is available. 
-% Inputs: selected raw pocketNIRS (.PNI) formatted files via import
-% function
+%
+% Inputs: 
+%   1. file list, saved dir() call in working directory
+%   2. files of interest, boolean array denoting files of interest within
+%       the file list
+%   3. numData, max # of data points per study for variable of interest
+%   4. event markers denoting start and finish of exercise challenge,
+%       numeric array
+%
+% Outputs:
+%   1. three minute data block
+%
 
 % Initialize a cell array of interest +1 for study label
 threeminpostrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
@@ -386,7 +378,7 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
 % Loop over all files of interest (within filetype) in the directory
 
     try % Select variable column of interest, transpose %
-        % Import data
+        % Import data via function
         importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
         data = importedFile.data(:,col); % col references ignore cnt/dateTime
         time = importedFile.data(:,1); % fixed % column 1
@@ -448,7 +440,8 @@ end
 threeminpostrampdatablock(...
     :,all(cellfun(@isempty,threeminpostrampdatablock),1)) = [];
 
-% Find max study length of three min time points post ramp start data block
+% Find max study length of three min time points
+% using post ramp start data block and findMaxTestLength function
 maxlengththreemindatablock = findMaxTestLength(threeminpostrampdatablock)-1; % remove label
 
 % Generate time axis scale
@@ -464,75 +457,9 @@ combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
 combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
 
 %% Generate values highlighting the trajectory of the variable of interest %
-% Given a time point of 50% peakVO2, locate the associated variable data at
-% that time point and at the start of the exercise challenge.
-% Inputs: binned data
-
-% Initialize collection variables
 numberoftests = size(fileType(idxFilesOfInterest),1);
-firstvaluevariable = zeros(numberoftests,1);
-halfpeakvariable = zeros(numberoftests,1);
-coefvariable = zeros(numberoftests,2);
-deltavariable = zeros(numberoftests,1);
-halfpeakVO2datablock = cell(numberoftests+1,5);
-
-% Collect values over files of interest using postrampdatablock data
-for iRow = 1:size(postrampdatablock,1);
-    if inputhalfpeakVO2time(iRow) ~= 0 % 0 is default 
-        try
-        % Assign data if 50% peak VO2 is present
-        idx_halfpeakVO2 = ceil(inputhalfpeakVO2time(iRow)*0.1);
-        currentdata = postrampdatablock(iRow, 2:end);
-        
-        % Clean up data from post ramp start data block
-        currentdata(:,all(cellfun(@isempty,currentdata),1)) = [];
-        currentdata = cell2mat(currentdata);
-        
-        % 0 and 50% peakVO2 values for variable of interest
-        firstvaluevariable(iRow) = currentdata(1);
-        halfpeakvariable(iRow) = currentdata(idx_halfpeakVO2);
-
-        % Get slope of data from 0 to 50% peakVO2
-        coefvariable(iRow,1:2) = polyfit(...
-            (0:10:10*idx_halfpeakVO2-1),...
-            currentdata(1:idx_halfpeakVO2),1);
-
-        % Get delta value from 0 to 50% peakVO2 for data of interest
-        deltavariable(iRow,1) = ...
-            currentdata(idx_halfpeakVO2) - currentdata(1);
-        catch peakVO2Err
-           % Put empty values if 50% peak VO2
-            firstvaluevariable(iRow) = NaN;
-            halfpeakvariable(iRow) = NaN;
-            coefvariable(iRow,1:2) = NaN;
-            deltavariable(iRow) = NaN;
-        end
-    else
-        % Put empty values if 50% peak VO2 is not present
-        firstvaluevariable(iRow) = NaN;
-        halfpeakvariable(iRow) = NaN;
-        coefvariable(iRow,1:2) = NaN;
-        deltavariable(iRow) = NaN;
-    end % end conditional that requires 50% peak VO2 time
-end % end testing session loop
-
-
-% Combine data into a block for output
-% This style solution will be supported in a future release, dataset might not
-%   currently incomplete
-% halfmaxdatablock = cell(size(postrampdatablock,1),5);
-% halfmaxdatablock(1:end,1) = postrampdatablock(1:end,1);
-% halfmaxdatablock{1:end,2:end} = horzcat(firstvaluevariable,...
-%                                          halfpeakvariable,...
-%                                          coefvariable,...
-%                                          deltavariable);
-%                                      
-slopevariable = coefvariable(:,1);
-yintvariable = coefvariable(:,2);
-T1 = dataset(firstvaluevariable,halfpeakvariable,...
-            slopevariable,yintvariable,deltavariable,...
-            'ObsNames',postrampdatablock(1:end,1));
-halfmaxdatablock = dataset2cell(T1);
+halfmaxdatablock = halfmaxdatablock( numberoftests, ...
+    postrampdatablock, inputhalfpeakVO2time );
 %% Output figures for visual confirmation
 % Generate unique directories to output figures of both raw and binned
 % data.
