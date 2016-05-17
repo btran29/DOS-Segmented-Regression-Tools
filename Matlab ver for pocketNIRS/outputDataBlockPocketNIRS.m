@@ -429,28 +429,11 @@ for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
         break
     end
     
-      % Clean up file name
+    % Clean up file name via function 'getsubjectID'
+    % Input: file name, string
+    % Output: subject ID, string
     currentFileName = fileType(iFilesOfInterest).name;
-    expression = '\d\d\d\d_[A-Z][A-Z]_'; % Search for ID + 2 lett initials
-    expression2 = '\d\d\d\d_[A-Z][A-Z][A-Z]_'; % ID + 3 letter initials
-    expression3 = '\d\d\d_[A-Z][A-Z]_'; % 3 number ID + 2 lett initials
-    % Use expression 1
-    idx = regexp(currentFileName,expression);
-    if isempty(idx) == 1
-        idx = regexp(currentFileName,expression);
-    end
-    % If expression 1 does not work, use expression 2
-    if isempty(idx) == 1
-        idx = regexp(currentFileName,expression2);
-    end
-    % If expression 2 does not work, use expression 3
-    if isempty(idx) == 1
-        idx = regexp(currentFileName,expression3);
-    end
-    % Remove alphabetic characters and underscores
-    subjectIdentifier = currentFileName(idx:idx+4);
-    subjectIdentifier = strrep(subjectIdentifier,'_','');
-    subjectIdentifier = regexprep(subjectIdentifier,'[A-Z]','');
+    subjectIdentifier = getsubjectID(curentFileName);
     
     % Enter post ramp data into cell array shifted 1 col for study label
     threeminpostrampdatablock(iFilesOfInterest,1) = cellstr(...
