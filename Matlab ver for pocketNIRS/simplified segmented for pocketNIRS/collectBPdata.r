@@ -112,9 +112,9 @@ collectBPdata <- function(argv,normTime,span,hasExeData){
 }
 
 # Function to plot all breakpoints and stylize figures
-bpFigures <- function(variable,xAxisLabel,yAxisLabel,title){
+bpFigures <- function(variable,normTime,xAxisLabel,yAxisLabel,title){
 	# Variable data over a 12 minute time axis
-	plot(variable$model$x,variable$model$y, xlim=c(min(normTime),
+	plot(variable$model$x,variable$model$y, xlim=c(0,
 		(max(normTime))), ann=FALSE)
 	# Labels after base data points
 	mtext(side = 1, text = xAxisLabel, line = 2)

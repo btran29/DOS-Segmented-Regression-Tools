@@ -27,7 +27,7 @@ write.table(table,seg.input.fid,append=FALSE,row.names=FALSE,sep=",")
 
 # Set segmented input file of interest
 directory	<- dir(pattern="*.csv")
-seg.input.fid <- directory[3]
+seg.input.fid <- directory[4]
 
 
 
@@ -192,7 +192,7 @@ for(session in 1:dosdata.numberofstudies){
     
     # Plot figures - Use try statements as some data is known to be too
     # noisy to all have breakpoints or successful
-    try({bpFigures(bp.output[[session]],"Time (min)","Left [HbR] (uM)","PFC HbR")})
+    try({bpFigures(bp.output[[session]],time.output[[session]],"Time (min)","Left [HbR] (uM)","PFC HbR")})
     dev.off() 
   }
 }
