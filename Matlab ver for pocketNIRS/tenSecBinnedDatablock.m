@@ -40,6 +40,36 @@ function [ postrampdatablock,...
 %   4. DataOrEventErr, error
 %       in case there either missing imported data or event marker data
 
+%% Check for correct inputs prior to starting analysis
+if nargin ~= 7
+    warning('Missing inputs')
+    return
+end
+if isstruct(fileType) == 0
+    warning('Missing/invalid input dir() call, fileType')
+    return
+end
+if islogical(idxFilesOfInterest) == 0 
+    warning('Missing/invalid files of interest boolean index,idxFilesOfInterest')
+end
+if isnumeric(col) == 0
+    warning('Missing/invalid column of data to bin');
+    return
+end
+if isnumeric(numData) == 0
+    warning('Missing/invalid maximum number of data points, numData')
+    return
+end
+if isnumeric(inputrampstarteventmarkers) == 0 || isnumeric(inputrampendeventmarkers) == 0
+    warning('Missing/invalid array of input markers')
+    return
+end
+if isnumeric(bininterval) == 0
+    warning('Missing/invalid binning interval, bininterval')
+    return
+end
+
+%% Start function
 % Initialize a cell array of interest +1 for file label
 postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
 prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
