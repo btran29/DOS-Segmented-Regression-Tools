@@ -1,4 +1,7 @@
-function [ halfmaxdatablock ] = halfmaxdatablock( numberoftests, postrampdatablock, inputhalfpeakVO2time )
+function [ halfmaxdatablock, peakVO2Err ] = ...
+    halfmaxdatablock(numberoftests,...
+                     postrampdatablock,...
+                     inputhalfpeakVO2time)
 %% Generate values highlighting the trajectory of the variable of interest %
 % Given a time point of 50% peakVO2, locate the associated variable data at
 % that time point and at the start of the exercise challenge.
@@ -12,7 +15,8 @@ function [ halfmaxdatablock ] = halfmaxdatablock( numberoftests, postrampdatablo
 % Output: 
 %   1. halfmaxdatablock, cell 
 %       format: file, data, with testing sessions sessions separated 
-%       by row, first row = variable names
+%           by row, first row = variable names
+%           a table meant for xlsx output
 
 % Initialize collection variables
 firstvaluevariable = zeros(numberoftests,1);
@@ -45,7 +49,7 @@ for iRow = 1:size(postrampdatablock,1);
             % Get delta value from 0 to 50% peakVO2 for data of interest
             deltavariable(iRow,1) = ...
                 currentdata(idx_halfpeakVO2) - currentdata(1);
-        catch peakVO2Err %#ok<NASGU>
+        catch peakVO2Err
            % Put empty values if 50% peak VO2
             firstvaluevariable(iRow) = NaN;
             halfpeakvariable(iRow) = NaN;

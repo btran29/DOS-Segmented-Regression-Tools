@@ -208,258 +208,39 @@ inputhalfpeakVO2time = rampeventmarkerinput.data.Sheet1(1:end,3);
 
 %% Collect data from all files of interest 
 disp('Binning data..')
-% Initialize a cell array of interest +1 for study label
-postrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
-prerampdatablock  = cell(size(idxFilesOfInterest,1),numData+1);
+
 
 %% 10-second bins pre/post ramp start %
-% Bin data by binning interval, create a table. Sort individiual files in
-% to rows on the table. Output the table, in 3 formats with data before the 
-% start of the exercise challenge (warmup) and throughout the exercise
-% challenge. 'Right justify' the output data for the warmup and 'left
-% justify' the output data for the exercise challenge. 
-% Inputs: selected raw pocketNIRS (.PNI) formatted files via import
-% function
+[postrampdatablock,...
+ prerampdatablock,...
+ combineddatablock,...
+ DataOrEventErr_TenSec] = tenSecBinnedDatablock(...
+                                fileType,...
+                                idxFilesOfInterest,...
+                                col,...
+                                numData,...
+                                inputrampstarteventmarkers,...
+                                inputrampendeventmarkers,...
+                                bininterval);
 
-for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
-    % Loop over all files of interest (within filetype) in the directory
-    try
-        % Select variable column of interest, transpose %
-        % Import data
-        importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
-        data = importedFile.data(:,col); % col references ignore cnt/dateTime
-        time = importedFile.data(:,1); % fixed % column 1
-        events = importedFile.data(:,2); % fixed @ column 2
-
-        % Locate beginning of ramp and bin from ramp as the central
-        % point
-        % Use input marker data
-        idxrampstart = find(events == inputrampstarteventmarkers(iFilesOfInterest));
-        idxrampend   = find(events == inputrampendeventmarkers(iFilesOfInterest));
-
-        postrampstartdata = data(idxrampstart:idxrampend);
-        postrampstarttime = time(idxrampstart:idxrampend);
-        prerampstartdata  = data(1:idxrampstart);
-        prerampstarttime  = time(1:idxrampstart);
-
-        % Bin post ramp start data
-        % UNEQUALSIZEDBINS Custom function to make bins over an
-        % interval where:
-        % [ binMeans ] = unequalsizedbins( interval,data,time )
-        postrampstartBinMeans = unequalsizedbins(...
-            bininterval,postrampstartdata,postrampstarttime);
-
-        % Flip pre ramp start data and bin
-        prerampstartdata_flipped = fliplr(prerampstartdata);
-        prerampstartBinMeans = unequalsizedbins(...
-            bininterval,prerampstartdata_flipped,prerampstarttime);
-
-
-    catch DataOrEventErr
-        warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
-        break
-    end
-     
-    % Clean up file name via function 'getsubjectID'
-    % Input: file name, string
-    % Output: subject ID, string
-    currentFileName = fileType(iFilesOfInterest).name;
-    subjectIdentifier = getsubjectID(curentFileName);
-   
-    % Enter post ramp data into cell array shifted 1 col for study label
-    postrampdatablock(iFilesOfInterest,1) = cellstr(...
-        subjectIdentifier);
-    postrampdatablock(iFilesOfInterest,...
-        2:(size(postrampstartBinMeans,1)+1)) = ...
-    transpose(num2cell(postrampstartBinMeans));
-
-    % Enter pre ramp data into cell array shifted 1 col for study label
-    prerampdatablock(iFilesOfInterest,1) = cellstr(...
-        subjectIdentifier);
-    prerampdatablock(iFilesOfInterest,...
-        2:(size(prerampstartBinMeans,1)+1)) = ...
-        transpose(num2cell(prerampstartBinMeans));
-
-    if (size(postrampdatablock,1) == 0) || (size(prerampdatablock,1) == 0)
-    % Stop script if pre and post ramp start data blocks are not the same size
-        disp(iFilesOfInterest)
-        break
-    end
-end % end file loop
-
-
-% Locate maximum study length of time-axis by locating longest testing 
-% session in order to generate a time axis of the appropriate length and
-% 'right-justify' a block of data
-
-% Post ramp start data block
-maxlengthpostrampdatablock = findMaxTestLength(postrampdatablock)-1; % remove label
-% Pre ramp start data block
-maxlengthprerampdatablock = findMaxTestLength(prerampdatablock)-1; % remove label
-
-
-% 'Right justified' pre ramp start data block %
-rightjustifiedprerampdatablock = prerampdatablock;
-for iRow = 1:size(prerampdatablock,1)
-    % Circularly shift row to match longest study
-    currentRowLength = find(...
-        ~cellfun('isempty',prerampdatablock(iRow,2:end)),1,'last');
-    rightjustifiedprerampdatablock(iRow,2:end) = circshift(...
-        rightjustifiedprerampdatablock(iRow,2:end),...
-        [0 (maxlengthprerampdatablock-currentRowLength)]);
-end
-
-% Combined data block with time axis scale % 
-    % '-1' for pre-ramp refers to removing the ramp-start bin from
-    % consideration
-    % Combination includes: 
-    % 1) 'Right justified' pre ramp start data blcok
-    % 2) post ramp start data block
-   
-% Generate time axis % 
-
-% Generate pre ramp start time axis
-prerampstarttimeaxis = ...
-    -bininterval*(maxlengthprerampdatablock-1):...
-    bininterval:...
-    -bininterval;  
-
-% Generate post ramp start time axis
-postrampstarttimeaxis = ...
-    0:bininterval:bininterval*maxlengthpostrampdatablock;
-
-% Combine pre/post ramp time axes
-currentcombinedtimeaxis = horzcat(...
-    prerampstarttimeaxis,postrampstarttimeaxis);
-
-% Combine pre/post data %
-
-% Combine pre/post ramp data blocks
-currentprocesseddata = horzcat(...
-    rightjustifiedprerampdatablock(:,2:end),...
-    postrampdatablock(:,2:end));
-% Remove empty columns
-currentprocesseddata(...
-    :,all(cellfun(@isempty,currentprocesseddata),1)) = [];
-
-
-% Combine data and time axis
-combineddatablock = cell(...
-    size(currentprocesseddata,1)+1,...
-    size(currentprocesseddata,2)+1);
-combineddatablock(1,1) = {'Time(sec)'};
-combineddatablock(2:end,1) = prerampdatablock(:,1);
-combineddatablock(2:end,2:end) = currentprocesseddata;
-combineddatablock(1,2:end) = num2cell(currentcombinedtimeaxis);
-    
         
 %% 3 minute -10 sec bins %
-% Repeat binning procedure with 3-minute intervals. Each bin starts at
-% '-binning interval' (e.g. -10 seconds) from time point of interest. Time
-% points of interest start at 0 (ramp start), and every 180 sec after if
-% data is available. 
-%
-% Inputs: 
-%   1. file list, saved dir() call in working directory
-%   2. files of interest, boolean array denoting files of interest within
-%       the file list
-%   3. numData, max # of data points per study for variable of interest
-%   4. event markers denoting start and finish of exercise challenge,
-%       numeric array
-%
-% Outputs:
-%   1. three minute data block
-%
+[ combinedthreemindatablock, DataOrEventErr ] = threeMinBinnedDatablock(...
+                                            fileType,...
+                                            idxFilesOfInterest,...
+                                            numData,...
+                                            inputrampstarteventmarkers,...
+                                            inputrampendeventmarkers);
 
-% Initialize a cell array of interest +1 for study label
-threeminpostrampdatablock = cell(size(idxFilesOfInterest,1),numData+1);
-
-for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest))
-% Loop over all files of interest (within filetype) in the directory
-
-    try % Select variable column of interest, transpose %
-        % Import data via function
-        importedFile = importdata(fileType(iFilesOfInterest).name, ',',4);
-        data = importedFile.data(:,col); % col references ignore cnt/dateTime
-        time = importedFile.data(:,1); % fixed % column 1
-        events = importedFile.data(:,2); % fixed @ column 2
-
-        % Locate beginning of ramp and bin from ramp as the central point
-        % Use input marker data
-        idxrampstart = find(events == inputrampstarteventmarkers(iFilesOfInterest));
-        idxrampend   = find(events == inputrampendeventmarkers(iFilesOfInterest));
-        
-        % Locate three minute intervals for individual session with ramp
-        % only
-        currentadjustedtime = time(idxrampstart:idxrampend);
-        currentadjustedtime = currentadjustedtime - time(idxrampstart);
-        currentthreeminlocs = 0:180:currentadjustedtime(end);
-
-        % Initialize method variables
-        last10secBinMeans = NaN(length(currentthreeminlocs),1);
-
-        for ithreeminloc = 1:numel(currentthreeminlocs);
-        % For each three minute time-point
-
-            %Initialize/reset flags
-            flagForBin = false(length(currentadjustedtime),1);
-
-            % Flag data that fits into current interval (-10 seconds)
-            allIdx = 1:numel(currentadjustedtime);
-            idxBin = allIdx(...
-                currentadjustedtime >= (currentthreeminlocs(ithreeminloc)-10) &...
-                currentadjustedtime <= currentthreeminlocs(ithreeminloc));
-            flagForBin(idxBin) = true;
-
-            % Get bin mean
-            last10secBinMeans(ithreeminloc,1) = mean(data(flagForBin));
-        end
-
-        
-    catch DataOrEventErr
-        warning('Missing data/Event - %s',fileType(iFilesOfInterest).name)
-        break
-    end
-    
-    % Clean up file name via function 'getsubjectID'
-    % Input: file name, string
-    % Output: subject ID, string
-    currentFileName = fileType(iFilesOfInterest).name;
-    subjectIdentifier = getsubjectID(curentFileName);
-    
-    % Enter post ramp data into cell array shifted 1 col for study label
-    threeminpostrampdatablock(iFilesOfInterest,1) = cellstr(...
-        subjectIdentifier);
-    threeminpostrampdatablock(iFilesOfInterest,...
-        2:(size(last10secBinMeans,1)+1)) = ...
-    transpose(num2cell(last10secBinMeans));
-
-end
-
-% Remove empty columns
-threeminpostrampdatablock(...
-    :,all(cellfun(@isempty,threeminpostrampdatablock),1)) = [];
-
-% Find max study length of three min time points
-% using post ramp start data block and findMaxTestLength function
-maxlengththreemindatablock = findMaxTestLength(threeminpostrampdatablock)-1; % remove label
-
-% Generate time axis scale
-threemindatablocktime = 0:180:180*maxlengththreemindatablock-1;
-
-% Combine data block with scale
-combinedthreemindatablock = cell(...
-    size(threeminpostrampdatablock,1)+1,...
-    (maxlengththreemindatablock+1));
-
-combinedthreemindatablock(1,1) = {'SubjectID'};
-combinedthreemindatablock(2:end,:) = threeminpostrampdatablock;
-combinedthreemindatablock(1,2:end) = num2cell(threemindatablocktime);
-
+                                        
 %% Generate values highlighting the trajectory of the variable of interest %
 numberoftests = size(fileType(idxFilesOfInterest),1);
-halfmaxdatablock = halfmaxdatablock( numberoftests, ...
-    postrampdatablock, inputhalfpeakVO2time );
+[halfmaxdatablock , peakVO2Err] = halfmaxdatablock( ...
+                                    numberoftests, ...
+                                    postrampdatablock, ...
+                                    inputhalfpeakVO2time );
+                                
+                                
 %% Output figures for visual confirmation
 % Generate unique directories to output figures of both raw and binned
 % data.
