@@ -258,7 +258,7 @@ for iFile = 1:numberOfParticipants
     endRow = endRows(iFile);
 
     [TimeSec,HR,Work,VO2,VO2kg,VCO2,RQ,VEbtps,RTrest,Level] = ...
-        importTemp(workbookFile,sheetName,startRow,endRow);
+        importMetabolicCartData(workbookFile,sheetName,startRow,endRow);
 
 
     % Flag rows for level E or "Exercise" challenge, called 'idx'

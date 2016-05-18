@@ -1,4 +1,4 @@
-% Ver 4-22-16 Brian
+% Ver 5-16-16 Brian
 %% Output transposed block of a column of data from studies w/ keywords
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
@@ -183,7 +183,6 @@ xlswrite(inputfilename,inputlistarray,2,'A2');
 fprintf('\nGenerated input workbook in current directory.')
 fprintf('\nNOTE: New data is in the 2nd sheet to prevent overwriting.\n')
 
-
 %% Require user input prior to continuing
 if iCurrentdatatype == 1
 prompt = '\nHave the markers & time to 50% peakVO2 been located and entered into the input\n workbook? Press enter to continue. \n';
@@ -205,15 +204,13 @@ inputrampstarteventmarkers = rampeventmarkerinput.data.Sheet1(1:end,1);
 inputrampendeventmarkers = rampeventmarkerinput.data.Sheet1(1:end,2);
 inputhalfpeakVO2time = rampeventmarkerinput.data.Sheet1(1:end,3);
 
-
 %% Collect data from all files of interest 
 disp('Binning data..')
 
-
 %% 10-second bins pre/post ramp start %
-[postrampdatablock,...
- prerampdatablock,...
- combineddatablock] = tenSecBinnedDatablock(...
+[postRampStartDataBlock,...
+ preRampStartDataBlock,...
+ combinedDataBlock] = tenSecBinnedDatablock(...
                                 fileType,...
                                 idxFilesOfInterest,...
                                 col,...
@@ -221,26 +218,23 @@ disp('Binning data..')
                                 inputrampstarteventmarkers,...
                                 inputrampendeventmarkers,...
                                 bininterval);
-
         
 %% 3 minute -10 sec bins %
-[ combinedthreemindatablock ] = threeMinBinnedDatablock(...
+[combinedThreeMinDataBlock] = threeMinBinnedDatablock(...
                                         fileType,...
                                         idxFilesOfInterest,...
                                         col,...
                                         numData,...
                                         inputrampstarteventmarkers,...
                                         inputrampendeventmarkers);
-
                                         
 %% Generate values highlighting the trajectory of the variable of interest %
 numberoftests = size(fileType(idxFilesOfInterest),1);
-[halfmaxdatablock ] = halfVO2maxdatablock(...
+[halfMaxDataBlock] = halfVO2maxdatablock(...
                             numberoftests,...
-                            postrampdatablock,...
+                            postRampStartDataBlock,...
                             inputhalfpeakVO2time);
-                                
-                                
+                                                               
 %% Output figures for visual confirmation
 % Generate unique directories to output figures of both raw and binned
 % data.
@@ -248,28 +242,14 @@ numberoftests = size(fileType(idxFilesOfInterest),1);
 disp('Outputting figures..')
 % Get current directory if not already present
 if exist('currentdir','var') == 0
-    currentdir = pwd; 
+    currentDir = pwd; 
 end
 
 % Output unbinned data %
 
 % Create new unbinned figures folder if not already present
 unbinneddataplotsfolder = 'Plots - Raw data';
-if exist(...
-        [currentdir '\' unbinneddataplotsfolder],...
-        'dir') == 0
-    mkdir(unbinneddataplotsfolder)
-end
-
-% Create a new variables subfolder if not already present
-if exist(...
-        [currentdir '\' unbinneddataplotsfolder '\' label],...
-        'dir') == 0
-    cd([currentdir '\' unbinneddataplotsfolder])
-    mkdir(label)
-    cd(currentdir)
-end
-
+makeFolderCheck(currentDir,unbinneddataplotsfolder) % use custom function
 
 if exist('DataOrEventErr','var') == 0
 % If there are no previous data aquisition errors with raw data, output the
@@ -297,9 +277,9 @@ if exist('DataOrEventErr','var') == 0
         hold off
 
         % Save into new folder
-        cd([currentdir '\' unbinneddataplotsfolder '\' label])
+        cd([currentDir '\' unbinneddataplotsfolder '\' label])
         export_fig(sprintf('%s',currentfilename),'-png','-m2');
-        cd(currentdir)
+        cd(currentDir)
     end
 end
 
@@ -308,37 +288,24 @@ end
 
 % Create new binned figures folder if not already present
 binneddataplotsfolder = 'Plots - Binned data';
-if exist(...
-        [currentdir '\' binneddataplotsfolder],...
-        'dir') == 0
-    mkdir(binneddataplotsfolder)
-end
-
-% Create a new variables subfolder if not already present
-if exist(...
-        [currentdir '\' binneddataplotsfolder '\' label],...
-        'dir') == 0
-    cd([currentdir '\' binneddataplotsfolder])
-    mkdir(label)
-    cd(currentdir)
-end
+makeFolderCheck(currentDir,binneddataplotsfolder) % use custom function
 
 % Check if bin means are equally sized and a label is present
-if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
+if size(postRampStartDataBlock,1) == size(preRampStartDataBlock,1) &&...
         exist('label','var') == 1
     % Output preliminary figures in data block
-    for iProcessedFile = 1:size(postrampdatablock,1)
+    for iProcessedFile = 1:size(postRampStartDataBlock,1)
         
         % Get length of study (not including label)%
         
         % Pre ramp start
         currentprerowlength = find(...
             ~cellfun('isempty',...
-            prerampdatablock(iProcessedFile,:)),1,'last')-1;
+            preRampStartDataBlock(iProcessedFile,:)),1,'last')-1;
         % Post ramp start
         currentpostrowlength = find(...
             ~cellfun('isempty',...
-            postrampdatablock(iProcessedFile,:)),1,'last')-1;
+            postRampStartDataBlock(iProcessedFile,:)),1,'last')-1;
         
         % Generate axis % 
         
@@ -360,13 +327,13 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         
         % Combine pre/post ramp data blocks
         currentprocesseddata = cell2mat(horzcat(...
-            prerampdatablock(iProcessedFile,2:end-1),...
-            postrampdatablock(iProcessedFile,2:end)));
+            preRampStartDataBlock(iProcessedFile,2:end-1),...
+            postRampStartDataBlock(iProcessedFile,2:end)));
             % Select one data point less in prerampdatablock
             % to remove overlapping 0 second time point
         
         % Grab label from first cell
-        currentfilename = postrampdatablock{iProcessedFile,1};
+        currentfilename = postRampStartDataBlock{iProcessedFile,1};
         
         % Make figure %
         figure;
@@ -380,18 +347,18 @@ if size(postrampdatablock,1) == size(prerampdatablock,1) &&...
         hold off
 
         % Save into new folder
-        cd([currentdir '\' binneddataplotsfolder '\' label])
+        cd([currentDir '\' binneddataplotsfolder '\' label])
         export_fig(sprintf('%s',currentfilename),'-png','-m2');
-        cd(currentdir)
+        cd(currentDir)
     end
 end
 
-%% Workbook post-processing
-combineddatablock = contigIDsort(combineddatablock);
-prerampdatablock = contigIDsort(prerampdatablock);
-postrampdatablock = contigIDsort(postrampdatablock);
-combinedthreemindatablock = contigIDsort(combinedthreemindatablock);
-halfmaxdatablock = contigIDsort(halfmaxdatablock);
+%% Workbook post-processing for SPSS input
+combinedDataBlock = contigIDsort(combinedDataBlock);
+preRampStartDataBlock = contigIDsort(preRampStartDataBlock);
+postRampStartDataBlock = contigIDsort(postRampStartDataBlock);
+combinedThreeMinDataBlock = contigIDsort(combinedThreeMinDataBlock);
+halfMaxDataBlock = contigIDsort(halfMaxDataBlock);
 
 %% Output spreadsheets
 disp('Outputting spreadsheets..')
@@ -399,29 +366,26 @@ disp('Outputting spreadsheets..')
 
 % Get current directory if not already present
 if exist('currentdir','var') == 0
-    currentdir = pwd; 
+    currentDir = pwd; 
 end
 
 % Create new binned figures folder if not already present
 summaryworkbookfolder = 'Data - Binned Summary';
-if exist(...
-        [currentdir '\' summaryworkbookfolder],...
-        'dir') == 0
-    mkdir(summaryworkbookfolder)
-end
+makeFolderCheck(currentDir,summaryworkbookfolder) % use custom function
+
 
 % Write cell array to an excel workbook file 
 
 % CD to Summary workbook folder
-cd([currentdir '\' summaryworkbookfolder])
+cd([currentDir '\' summaryworkbookfolder])
 
 % Combined summary workbook
 outputworkbookfilename = [outputFileName '.xlsx'];
-xlswrite(outputworkbookfilename,combineddatablock,1,'A1');
-xlswrite(outputworkbookfilename,prerampdatablock,2,'A1');
-xlswrite(outputworkbookfilename,postrampdatablock,3,'A1');
-xlswrite(outputworkbookfilename,combinedthreemindatablock,4,'A1');
-xlswrite(outputworkbookfilename, halfmaxdatablock,5,'A1');
+xlswrite(outputworkbookfilename,combinedDataBlock,1,'A1');
+xlswrite(outputworkbookfilename,preRampStartDataBlock,2,'A1');
+xlswrite(outputworkbookfilename,postRampStartDataBlock,3,'A1');
+xlswrite(outputworkbookfilename,combinedThreeMinDataBlock,4,'A1');
+xlswrite(outputworkbookfilename, halfMaxDataBlock,5,'A1');
 xlswrite(outputworkbookfilename,inputmetadata,6,'A1');
 e = actxserver('Excel.Application'); 
     ewb = e.Workbooks.Open([pwd '\' outputworkbookfilename]);
@@ -436,51 +400,12 @@ e = actxserver('Excel.Application');
     e.Quit
 
 % Switch to working directory
-cd(currentdir)
+cd(currentDir)
 
+%% Output Data - Unbinned CSV format with ramp start adjusted time  %
+outputUnbinnedNIRSWithTime() % shelved
 
-% Output Data - Unbinned CSV format with ramp start adjusted time  %
-% TODO: FIX TO WORK WITHOUT USE OF DATASET DATA TYPE
+%% Finished message
+disp('Done!')
 
-% if nirs2rampstartcsv % manually set to to true or false in script input
-%     disp('Outputting unbinned ramp adjusted time CSVs..')
-%     % Get current directory if not already present
-%     if exist('currentdir','var') == 0 %#ok<UNRCH>
-%         currentdir = pwd; 
-%     end
-% 
-%     % Create new binned figures folder if not already present
-%     unbinnedrampadjtimefolder = 'Data - unbinned with ramp adjusted time';
-%     if exist(...
-%             [currentdir '\' unbinnedrampadjtimefolder],...
-%             'dir') == 0
-%         mkdir(unbinnedrampadjtimefolder)
-%     end
-% 
-%     % Process will take ~1 min for each file
-%     % Requires dataset data type support
-%     for iFilesOfInterest = 1:length(fileType(idxFilesOfInterest)) 
-%         pocketnirslog = importNIRSdata(fileType(iFilesOfInterest).name);
-%         pocketnirs
-% 
-%         % Locate ramp start using selected event marker.
-%         for iRow = 1:length(pocketnirslog.Event)
-%             if isequal(pocketnirslog.Event,[''' inputrampstarteventmarkers(iFilesOfInterest)])
-%                 idxrampstart = iRow
-%             end
-%         end
-%         % Add in adjusted time column
-%         pocketnirslog.RampStartAdjTime = pocketnirslog.ElapsedTime - pocketnirslog.ElapsedTime(idxrampstart);
-% 
-%         % Export to csv file in new folder
-%         filename = [strrep(fileType(iFilesOfInterest).name,'.PNI',''),...
-%             label, '.csv'];
-%         cd([currentdir '\' unbinnedrampadjtimefolder])
-%         export(pocketnirslog,'file',filename,'Delimiter',',')
-%         cd(currentdir)
-%     end
-% end
-
-% Finished message
- disp('Done!')
 end
