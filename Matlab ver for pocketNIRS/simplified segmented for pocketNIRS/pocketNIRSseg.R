@@ -27,7 +27,7 @@ write.table(table,seg.input.fid,append=FALSE,row.names=FALSE,sep=",")
 
 # Set segmented input file of interest
 directory	<- dir(pattern="*.csv")
-seg.input.fid <- directory[4]
+seg.input.fid <- directory[5]
 
 
 
@@ -186,13 +186,13 @@ for(session in 1:dosdata.numberofstudies){
   if (length(bp.output[[session]]$psi)/3 >= 1 && seg.input$specifiedBPs[session] != 0 ){
     
     seg.out.fig.fid <- paste(bp.outputlist.cleaned[[session]]$file,'_',
-                             gsub('.csv','',dosData.fid),'.tiff',sep = "")
+                             gsub('.csv','',dosData.fid),'.png',sep = "")
     
-    tiff(seg.out.fig.fid, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
-    
+    # tiff(seg.out.fig.fid, units = "px", width = 600, height = 600, res = NA, compression = "lzw")
+    png(seg.out.fig.fid, units = "in", width = 7, height = 7, res = 800)
     # Plot figures - Use try statements as some data is known to be too
     # noisy to all have breakpoints or successful
-    try({bpFigures(bp.output[[session]],time.output[[session]],"Time (min)","Left [HbR] (uM)","PFC HbR")})
+    try({bpFigures(bp.output[[session]],time.output[[session]],"Time (min)","Left-Side PFC HbR (arb. u)","")})
     dev.off() 
   }
 }
