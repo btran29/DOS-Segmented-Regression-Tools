@@ -3,7 +3,7 @@ A collection of R and Matlab scripts used to batch-analyze diffuse optical spect
 
 ![](https://github.com/btran29/DOSI-SLM-SegmentedOut/blob/master/example/fig1.PNG)
 
-**Example figure**: Prefrontal cortex deoxygenated hemoglobin levels (HbR) in a healthy adult human subject throughout a standardized ramped-cycling challenge.
+**Example figure**: Prefrontal cortex deoxygenated hemoglobin levels (HbR) in a healthy adult human subject throughout a standardized ramped-cycling challenge. X-axis breakpoint locations are denoted by a hollow square with a vertical dashed AB line. The strength of fit (95% CI) given the shown breakpoints are denoted by horizontal lines extending from the hollow square. In this figure, the identified HbR threshold is the second breakpoint. The y-axis data label, [HbR], would not apply to an analysis conducted on the pocketNIRS system, which uses a continuous-wave DOS method.
 
 #### More information on what these scripts were used for
 These tools were used to clean DOS and metabolic cart data then run a threshold analysis via a piecewise linear modeling package (['segmented', available in CRAN](https://cran.r-project.org/web/packages/segmented/index.html)). An analysis integrating both DOS and metabolic cart data was conducted by binning the metabolic cart data over key time points in DOS data.
