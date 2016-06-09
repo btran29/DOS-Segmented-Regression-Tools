@@ -1,5 +1,5 @@
 # DOS-Segmented-Regression-Tools
-A collection of R and Matlab scripts used to batch-analyze diffuse optical spectroscopy (DOS) and metabolic cart data via piecewise linear regression. These scripts were priginally intended for internal use with the Hamamatsu Photonics TRS-20 and pocketNIRS for optical data, and the CareFusion Vmax system for metabolic cart data. The scripts are organized into folders by device.
+A collection of R and Matlab scripts used to batch-analyze diffuse optical spectroscopy (DOS) and metabolic cart data via piecewise linear regression. These scripts were originally intended for internal use with the Hamamatsu Photonics TRS-20 and pocketNIRS for optical data, and the CareFusion Vmax system for metabolic cart data. The scripts are organized into folders by device.
 
 ![](https://github.com/btran29/DOSI-SLM-SegmentedOut/blob/master/example/fig1.PNG)
 
