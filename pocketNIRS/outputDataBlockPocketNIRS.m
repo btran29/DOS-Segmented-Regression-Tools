@@ -1,4 +1,4 @@
-% Ver 5-16-16 Brian
+% Ver 6-9-16 Brian
 %% Output transposed block of a column of data from studies w/ keywords
 % This script selects a column of data from all studies in a 
 % working directory, then outputs it all in a single copy-
@@ -234,6 +234,11 @@ numberoftests = size(fileType(idxFilesOfInterest),1);
                             numberoftests,...
                             postRampStartDataBlock,...
                             inputhalfpeakVO2time);
+                        
+%% Obtain 0-100% time points in 10% increments
+[percentDataBlock] = percentIncrementDataBlock(...
+                        numberoftests,...
+                        postRampStartDataBlock);
                                                                
 %% Output figures for visual confirmation
 % Generate unique directories to output figures of both raw and binned
@@ -249,7 +254,7 @@ end
 
 % Create new unbinned figures folder if not already present
 unbinneddataplotsfolder = 'Plots - Raw data';
-makeFolderCheck(currentDir,unbinneddataplotsfolder) % use custom function
+makeFolderCheck(currentDir,unbinneddataplotsfolder,label) % use custom function
 
 if exist('DataOrEventErr','var') == 0
 % If there are no previous data aquisition errors with raw data, output the
@@ -288,7 +293,7 @@ end
 
 % Create new binned figures folder if not already present
 binneddataplotsfolder = 'Plots - Binned data';
-makeFolderCheck(currentDir,binneddataplotsfolder) % use custom function
+makeFolderCheck(currentDir,binneddataplotsfolder,label) % use custom function
 
 % Check if bin means are equally sized and a label is present
 if size(postRampStartDataBlock,1) == size(preRampStartDataBlock,1) &&...
@@ -359,6 +364,7 @@ preRampStartDataBlock = contigIDsort(preRampStartDataBlock);
 postRampStartDataBlock = contigIDsort(postRampStartDataBlock);
 combinedThreeMinDataBlock = contigIDsort(combinedThreeMinDataBlock);
 halfMaxDataBlock = contigIDsort(halfMaxDataBlock);
+percentDataBlock = contigIDsort(percentDataBlock);
 
 %% Output spreadsheets
 disp('Outputting spreadsheets..')
@@ -371,7 +377,7 @@ end
 
 % Create new binned figures folder if not already present
 summaryworkbookfolder = 'Data - Binned Summary';
-makeFolderCheck(currentDir,summaryworkbookfolder) % use custom function
+makeFolderCheck(currentDir,summaryworkbookfolder,label) % use custom function
 
 
 % Write cell array to an excel workbook file 
@@ -386,7 +392,8 @@ xlswrite(outputworkbookfilename,preRampStartDataBlock,2,'A1');
 xlswrite(outputworkbookfilename,postRampStartDataBlock,3,'A1');
 xlswrite(outputworkbookfilename,combinedThreeMinDataBlock,4,'A1');
 xlswrite(outputworkbookfilename, halfMaxDataBlock,5,'A1');
-xlswrite(outputworkbookfilename,inputmetadata,6,'A1');
+xlswrite(outputworkbookfilename, percentDataBlock,6,'A1');
+xlswrite(outputworkbookfilename,inputmetadata,7,'A1');
 e = actxserver('Excel.Application'); 
     ewb = e.Workbooks.Open([pwd '\' outputworkbookfilename]);
     ewb.Worksheets.Item(1).Name = 'For copy & paste';
@@ -394,7 +401,8 @@ e = actxserver('Excel.Application');
     ewb.Worksheets.Item(3).Name = 'Post-ramp-start data';
     ewb.Worksheets.Item(4).Name = 'Three Min Interval';
     ewb.Worksheets.Item(5).Name = '0-50% peakVO2 data';
-    ewb.Worksheets.Item(6).Name = 'Metadata';
+    ewb.Worksheets.Item(6).Name = 'Percent TimePoints';
+    ewb.Worksheets.Item(7).Name = 'Metadata';
     ewb.Save
     ewb.Close(false);
     e.Quit

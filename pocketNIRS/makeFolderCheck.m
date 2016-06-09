@@ -1,4 +1,4 @@
-function [  ] = makeFolderCheck( currentDir,folder )
+function [  ] = makeFolderCheck( currentDir,folder,label )
 %makeFolderCheck check for folder, if not present, mkdir
 %   Requires administrative rights to make a directory.
 %
