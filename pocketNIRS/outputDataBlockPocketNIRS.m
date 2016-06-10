@@ -53,8 +53,8 @@
 % extensions or key words (e.g. '*.xls' or '*.csv')
 fileIdentifier = '*.PNI';
 
-% If you would like to further narrow file selection you can use an 
-% additional key word (e.g. study phase, subject IDs, etc.)
+% If you would like to further narrow file selection you can use 
+% additional key words in a cell array(e.g. study phase, subject IDs, etc.)
 keyword = {'pocket_nirs'};
 
 % Label for the output (e.g. keywords, variable of interest in the column 
@@ -231,14 +231,16 @@ disp('Binning data..')
 %% Generate values highlighting the trajectory of the variable of interest %
 numberoftests = size(fileType(idxFilesOfInterest),1);
 [halfMaxDataBlock] = halfVO2maxdatablock(...
-                            numberoftests,...
                             postRampStartDataBlock,...
-                            inputhalfpeakVO2time);
+                            inputhalfpeakVO2time,...
+                            numberoftests);
                         
 %% Obtain 0-100% time points in 10% increments
+percents = (0:10:100); % specified points of interest
 [percentDataBlock] = percentIncrementDataBlock(...
-                        numberoftests,...
-                        postRampStartDataBlock);
+                            postRampStartDataBlock,...                        
+                            percents,...
+                            numberoftests);
                                                                
 %% Output figures for visual confirmation
 % Generate unique directories to output figures of both raw and binned
@@ -250,7 +252,7 @@ if exist('currentdir','var') == 0
     currentDir = pwd; 
 end
 
-% Output unbinned data %
+% Output unbinned data figures %
 
 % Create new unbinned figures folder if not already present
 unbinneddataplotsfolder = 'Plots - Raw data';
@@ -289,7 +291,7 @@ if exist('DataOrEventErr','var') == 0
 end
 
 
-% Output binned data %
+% Output binned data figures %
 
 % Create new binned figures folder if not already present
 binneddataplotsfolder = 'Plots - Binned data';
@@ -359,6 +361,7 @@ if size(postRampStartDataBlock,1) == size(preRampStartDataBlock,1) &&...
 end
 
 %% Workbook post-processing for SPSS input
+% Add in study ID's in contiguously, sort by ID#
 combinedDataBlock = contigIDsort(combinedDataBlock);
 preRampStartDataBlock = contigIDsort(preRampStartDataBlock);
 postRampStartDataBlock = contigIDsort(postRampStartDataBlock);

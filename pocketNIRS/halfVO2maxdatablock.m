@@ -1,7 +1,7 @@
 function [ halfmaxdatablock, peakVO2Err ] = ...
-    halfVO2maxdatablock(numberoftests,...
-                     postrampdatablock,...
-                     inputhalfpeakVO2time)
+    halfVO2maxdatablock(dataBlock,...
+                     inputhalfpeakVO2time,...
+                     numberoftests)
 %% Generate values highlighting the trajectory of the variable of interest %
 % Given a time point of 50% peakVO2, locate the associated variable data at
 % that time point and at the start of the exercise challenge.
@@ -24,13 +24,13 @@ halfpeakvariable = zeros(numberoftests,1);
 coefvariable = zeros(numberoftests,2);
 deltavariable = zeros(numberoftests,1);
 
-% Collect values over files of interest using postrampdatablock data
-for iRow = 1:size(postrampdatablock,1);
+% Collect values over files of interest using dataBlock data
+for iRow = 1:size(dataBlock,1);
     if inputhalfpeakVO2time(iRow) ~= 0 % 0 is default 
         try
             % Assign data if 50% peak VO2 is present
             idx_halfpeakVO2 = ceil(inputhalfpeakVO2time(iRow)*0.1);
-            currentdata = postrampdatablock(iRow, 2:end);
+            currentdata = dataBlock(iRow, 2:end);
 
             % Clean up data from post ramp start data block
             currentdata(:,all(cellfun(@isempty,currentdata),1)) = [];
@@ -70,7 +70,7 @@ slopevariable = coefvariable(:,1);
 yintvariable = coefvariable(:,2);
 T1 = dataset(firstvaluevariable,halfpeakvariable,...
             slopevariable,yintvariable,deltavariable,...
-            'ObsNames',postrampdatablock(1:end,1));
+            'ObsNames',dataBlock(1:end,1));
 halfmaxdatablock = dataset2cell(T1);
 end
 

@@ -1,4 +1,5 @@
-function [ percentDataBlock ] = percentIncrementDataBlock( numberoftests, dataBlock)
+function [ percentDataBlock ] = percentIncrementDataBlock(...
+    dataBlock,percents,numberoftests)
 %percentIncrementDataBlock find test data based on % completion
 %   
 % Locate the associated variable data at % time points for relative
@@ -12,12 +13,11 @@ function [ percentDataBlock ] = percentIncrementDataBlock( numberoftests, dataBl
 %
 % Output: 
 %   1. percentDataBlock, cell 
-%       format: file, data, with testing sessions sessions separated 
-%           by row, first row = variable names
-%           a table meant for xlsx output
+%       format: a table with a session ID for the first column, and data
+%       populating columns to the right of the first column. the table will
+%       have header labels with time points of interest
 
-% Temporary input variable
-percents = [0:10:100];
+
 
 % Initialize collection variables
 dataArray = zeros(numberoftests,length(percents));

@@ -1,6 +1,12 @@
 function [ output ] = contigIDsort( input )
 %contigIDsort Creates contiguous ID axis, sorts cell array into new ID axis
-%   Requires cell array input
+%   Add missing study ID's contiguously, sort by ID# for SPSS
+%
+% Input:
+%   1. input, cell
+%       format: a table with a session ID for the first column, and data
+%       populating columns to the right of the first column. the table
+%       should have header labels
 
 %% Determine if there is a label row
 if ischar(input{1,2}) == 1 || isequal(fix(input{1,2}),input{1,2}) % whole #
