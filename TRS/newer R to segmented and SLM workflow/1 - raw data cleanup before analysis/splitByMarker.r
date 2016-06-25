@@ -9,7 +9,7 @@
 
 source('unequalBinMeans.r') # Includes uneqBinMeans
 
-splitByMarker <- function(keywords,batchFileDir,batchFile){
+splitByMarker <- function(keywords,batchFileDir,batchFile,binSizes){
 
   # Get current working directory
   workingDir <- getwd()
@@ -68,9 +68,39 @@ splitByMarker <- function(keywords,batchFileDir,batchFile){
     ramp		<-	reorganized[indRampBeg[1]:(indRampEnd[1]-1),]
     recovery	<-	reorganized[indRampEnd[1]:(length(data[,1])),]
 
-
+	
+	# Function to get relative time to beginning of phase, add to the table as column second 
+	# to ElapsTime
+	phaseTime <- function(phaseTimeData){
+	
+		# Get first time point
+		phaseTimeData[1] <- firstTimePoint
+		
+		# Create collection vector
+		phaseTime <- vector(mode="numeric", length=length(phaseTimeData))
+		
+		for(iRow in 1:length(phaseTimeData)){
+			phaseTime[iRow] <- phaseTimeData[iRow] - firstTimePoint
+		}
+	}
+	
+	
+	# Incorporate relative phase time to each phase's data
+	allphases.phasetime <- phaseTime(allphases$ElapsTime)
+	allphases <- rbind(allphases,allphases.phasetime)
+	
+	baseline.phasetime <- phaseTime(baseline$ElapsTime)
+	baseline <- rbind(baseline,baseline.phasetime)
+	
+	ramp.phasetime <- phaseTime(ramp$ElapsTime)
+	ramp <- rbind(ramp,ramp.phasetime)
+	
+	recovery.phasetime <- phaseTime(recovery$ElapsTime)
+	recovery <- rbind(recovery,recovery.phasetime)
+	
+	
     # Bin Data
-    binSizes = 10/60 # 10 seconds over data in minutes
+    # binSizes = 10/60 # 10 seconds over data in minutes
 
     allphases.binned	<-	data.frame(sapply(allphases,uneqBinMeans,
                                           binSize=binSizes,timeAxis=allphases$ElapsTime))
@@ -177,5 +207,5 @@ test <- FALSE
 if(test){
   # Should ouput 8 csv files with listed names, include studies with stated
   # keywords, and have fewer rows in the binned versions (check bins)
-  splitByMarker("PFC|VL|Muscle|Brain",'batch files','study phase markers batch file.csv')
+  splitByMarker("PFC|VL|Muscle|Brain",'batch files','study phase markers batch file.csv',10/60)
 }
